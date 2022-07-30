@@ -247,8 +247,8 @@ def fallenImage(filePath):
 
 
 if __name__ == "__main__":
-    testImageData(True)
-    #testVideo()
+    #testImageData(True)
+    testVideo()
     """
     test = {}
 

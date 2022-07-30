@@ -5,11 +5,13 @@ import cv2
 VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 240
 #FALEN_DISTANCE_THRESHOLD = 300
-FALEN_DISTANCE_THRESHOLD = 350
+#FALEN_DISTANCE_THRESHOLD = 350
+#FALEN_DISTANCE_THRESHOLD = 290
+FALEN_DISTANCE_THRESHOLD = 250
 
 class PoseFallen():
 
-    def __init__(self, dectConf=0.2, trackConf=0.2):
+    def __init__(self, dectConf=0.1, trackConf=0.1):
         self.mpDrawing = mp.solutions.drawing_utils
         self.mpHolistic = mp.solutions.holistic
         self.dectConf = dectConf
