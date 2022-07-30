@@ -1,0 +1,8 @@
+Total Data points,413
+No Detection,189
+True Positives (TP) ,14
+False Negatives (FN),131
+False positives (FP),0
+True Negatives (TN),79
+Precision (Pr),1.0
+Recall (Re),0.09655172413793103

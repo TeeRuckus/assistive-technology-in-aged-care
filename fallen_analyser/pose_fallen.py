@@ -9,7 +9,7 @@ FALEN_DISTANCE_THRESHOLD = 350
 
 class PoseFallen():
 
-    def __init__(self, dectConf=0.5, trackConf=0.5):
+    def __init__(self, dectConf=0.2, trackConf=0.2):
         self.mpDrawing = mp.solutions.drawing_utils
         self.mpHolistic = mp.solutions.holistic
         self.dectConf = dectConf
@@ -83,6 +83,8 @@ class PoseFallen():
 
     def orientationOfTorso(self, results):
         """
+        TODO: You will need to come back and test this one out, and see what 
+        results you will get
         """
         orientation = None
 
@@ -95,10 +97,9 @@ class PoseFallen():
         return orientation
 
 
-    def getDistanceHeadKnee(self, results, imgShape):
+    def getDistance(self, results, imgShape):
         """
         """
-
 
         distance = None
         landmarkFound = results.pose_landmarks
