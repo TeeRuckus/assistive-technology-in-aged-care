@@ -15,7 +15,7 @@ def testImageBbox():
     poseFallen = PoseFallen()
     testDataPath = "test_data/SetElderly/"
 
-    img = cv2.imread(testDataPath + "img_001.png")
+    img = cv2.imread(testDataPath + "img_060.png")
     results, img = poseFallen.findPose(img)
     fallen, bbox = poseFallen.orientationOfTorso(results, img.shape)
 

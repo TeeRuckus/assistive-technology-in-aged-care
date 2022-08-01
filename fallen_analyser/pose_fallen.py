@@ -136,15 +136,16 @@ class PoseFallen():
             xSide = xSideMax - xSideMin
             ySide = ySideMax = ySideMin
             """
-
-
+            xmin, ymin, xmax, ymax = bbox[0], bbox[1], bbox[2], bbox[3]
+            xSide = xmax - xmin
+            ySide = ymax - ymin
 
             print("ySide: ", ySide)
             print("xSide ", xSide)
 
 
 
-            if xSide > ySide:
+            if abs(xSide) > abs(ySide):
                 fallen = True
 
         return fallen , bbox
