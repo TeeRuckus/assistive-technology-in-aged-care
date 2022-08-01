@@ -5,13 +5,58 @@ import glob
 PATH = "test_data/SetElderly/"
 
 def main():
-    #testImage()
-    testVideo()
+    testImageBbox()
+    #testVideoBbox()
+    #testImageDist()
+    #testVideo()
 
 
-def testImage():
+def testImageBbox():
     poseFallen = PoseFallen()
-    #TODO: you will need to update this and use the path variable
+    testDataPath = "test_data/SetElderly/"
+
+    img = cv2.imread(testDataPath + "img_001.png")
+    results, img = poseFallen.findPose(img)
+    fallen, bbox = poseFallen.orientationOfTorso(results, img.shape)
+
+    print("Shape: ", img.shape)
+
+    print("has fallen: ", fallen)
+
+    cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+            (int(bbox[2]), int(bbox[3])), (0,0,255),
+            thickness=2, lineType=cv2.LINE_AA)
+
+
+    cv2.imshow ("fallen resident", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def testVideoBbox():
+    keepOpen = True
+    cap = cv2.VideoCapture(0)
+    poseFallen = PoseFallen()
+    while cap.isOpened and keepOpen:
+        _,frame = cap.read()
+        results, img = poseFallen.findPose(frame)
+
+        orientation, bbox = poseFallen.orientationOfTorso(results, img.shape)
+        if bbox:
+            cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                    (int(bbox[2]), int(bbox[3])), (0,0,255),
+                    thickness=2, lineType=cv2.LINE_AA)
+
+        cv2.imshow("Testing life vide feed", img)
+
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            keepOpen = False
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+def testImageDist():
+    poseFallen = PoseFallen()
     testDataPath = "test_data/SetElderly/"
     #reading in an image from the test data 
     image = cv2.imread(testDataPath + "img_058.png") #image 2 and 58 are going to be good for testing this
@@ -37,7 +82,7 @@ def testImage():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-def testVideo():
+def testVideoDistance():
     keepOpen = True
     cap = cv2.VideoCapture(0)
     poseFallen = PoseFallen()
@@ -200,6 +245,21 @@ def applyDistanceFallDetection():
 
     return obtainedResults
 
+
+def applyBBoxFallDetection():
+    """
+    PURPOSE: TO test the fall detection method using the bounding box method, and
+    trying to extract performance results from fall method.
+    """
+    poseFallen = PoseFallen()
+    #grabbing all images from the test directory
+    #grabbing all images from the test directory
+    imgPaths = glob.glob(PATH + "*.png")
+    obtainedResults = {}
+
+    for currImgPath in imgPath:
+        print(currImgPath)
+
 def writeToFile(path, data):
     """
     PURPOSE: to write data which has being stored in a dictionary to a file
@@ -247,8 +307,7 @@ def fallenImage(filePath):
 
 
 if __name__ == "__main__":
-    #testImageData(True)
-    testVideo()
+    main()
     """
     test = {}
 
