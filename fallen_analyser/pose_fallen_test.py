@@ -5,8 +5,10 @@ import glob
 PATH = "test_data/SetElderly/"
 
 def main():
-    #testImageData(distance=False, bbox=False)
-    testImageBbox()
+    testImageData(distance=True, bbox=False)
+    #getFalseNegativesBbox()
+    getFalseNegativesDistance()
+    #testImageBbox()
     #testVideoBbox()
     #testImageDist()
     #testVideo()
@@ -169,19 +171,68 @@ def testImageData(**kwargs):
     writeToFile("results/bounding_box_fall_detection/actualResults.csv", actualResults)
     writeToFile("results/distance_fall_detection/actualResults.csv", actualResults)
 
-    #calcPerformance(actualResults,distanceResults,
-            #"results/distance_fall_detection/results.csv")
+    calcPerformance(actualResults,distanceResults,
+            "results/distance_fall_detection/results.csv",
+            "results/distance_fall_detection/falseNegativeList.txt")
 
     calcPerformance(actualResults, bboxResults,
-            "results/bounding_box_fall_detection/results.csv")
+            "results/bounding_box_fall_detection/results.csv",
+            "results/bounding_box_fall_detection/falseNegativesList.txt")
 
 
 
+def getFalseNegativesDistance():
+    """
+    """
+    path = "results/distance_fall_detection/falseNegativeList.txt"
+    falseNegatives = readToList(path)
+    poseFallen = PoseFallen()
 
-def calcPerformance(actualDict, resultsDict, savePath):
+    for imgPath in falseNegatives:
+        print(imgPath, end=": ")
+        img = cv2.imread(imgPath)
+        results, img = poseFallen.findPose(img)
+
+        imgPath = imgPath.split('/')
+        imgPath = imgPath[-1]
+        success = cv2.imwrite("results/distance_fall_detection/False_Negatives/" + imgPath,
+                img)
+
+        print(success)
+
+
+def getFalseNegativesBbox():
+    """
+    """
+
+    path = "results/bounding_box_fall_detection/falseNegativesList.txt"
+    falseNegatives = readToList(path)
+    poseFallen = PoseFallen()
+
+    for imgPath in falseNegatives:
+        print(imgPath, end= ": " )
+        img = cv2.imread(imgPath.strip())
+        results, img = poseFallen.findPose(img)
+        fallen, bbox = poseFallen.orientationOfTorso(results, img.shape)
+
+        cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                (int(bbox[2]), int(bbox[3])), (0,0,255),
+                thickness=2, lineType=cv2.LINE_AA)
+
+        imgPath = imgPath.split('/')
+        imgPath = imgPath[-1]
+        success = cv2.imwrite("results/bounding_box_fall_detection/False_Negatives/" + imgPath,
+                img)
+
+        print(success)
+
+
+
+def calcPerformance(actualDict, resultsDict, savePath, fnPath):
     """
     """
     performance = {}
+    falseNegativeList = []
     truePostives = 0
     falseNegatives = 0
     falsePositives = 0
@@ -208,6 +259,7 @@ def calcPerformance(actualDict, resultsDict, savePath):
             #falls which have not being detected, count it as a false negative
             else:
                 falseNegatives += 1
+                falseNegativeList.append(key)
         #if the resident hasn't fallen
         else:
             #resident has fallen, although algorithm detects it as a fall, count
@@ -237,6 +289,7 @@ def calcPerformance(actualDict, resultsDict, savePath):
     performance["Recall (Re)"] = recall
 
     writeToFile(savePath, performance)
+    writeToFileList(fnPath, falseNegativeList)
 
 
 
@@ -301,11 +354,36 @@ def applyBBoxFallDetection():
 
 def writeToFile(path, data):
     """
-    PURPOSE: to write data which has being stored in a dictionary to a file
+    PURPOSE: To write data which has being stored in a dictionary to a file
     """
     with open(path, "w") as outStrm:
         for key in data.keys():
             outStrm.write("%s,%s\n"%(key,data[key]))
+
+
+def writeToFileList(path, inList):
+    """
+    PURPOSE: To write data which has being stored in a list format to a file
+    """
+
+    with open(path, "w") as outStrm:
+        for item in inList:
+            outStrm.write(item + "\n")
+
+
+def readToList(path):
+    """
+    PURPOSE: to read in a file which will be a list of items 
+    """
+
+    retItems = []
+    with open(path, "r") as inStrm:
+        for item in inStrm:
+            retItems.append(item.strip())
+
+
+    return retItems
+
 
 def readToDictonary(path):
     """
