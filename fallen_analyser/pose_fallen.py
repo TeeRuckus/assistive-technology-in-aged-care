@@ -10,7 +10,6 @@ VISIBILITY_THRESHOLD = 0.4
 FALEN_DISTANCE_THRESHOLD = 250
 
 class PoseFallen():
-
     def __init__(self, dectConf=0.1, trackConf=0.1):
         self.mpDrawing = mp.solutions.drawing_utils
         self.mpHolistic = mp.solutions.holistic
@@ -114,35 +113,9 @@ class PoseFallen():
             bbox.append(rHipCords[0])
             bbox.append(rHipCords[1])
 
-            #getting the euclidean distance of each side of rectangle 
-            #we're going to determine orientation by which side is longer in 
-            #calculated bounding box. If y-side is longer person hasn't fallen, 
-            #if x side is longer then the person has fallen
-
-            #ySide = np.sqrt(pow(lShoulderCords[1],2) + pow(lHipCords[1],2))
-            #xSide = np.sqrt(pow(lShoulderCords[0],2) + pow(rShoulderCords[0],2))
-
-            """
-            xSides = [lShoulderCords[0], rShoulderCords[0], lHipCords[0],
-                    rHipCords[0]]
-
-            ySides = [lShoulderCords[1], rShoulderCords[1], lHipCords[1],
-                    rHipCords[1]]
-            xSideMax = max(xSides)
-            xSideMin = min(xSides)
-            ySideMax = max(ySides)
-            ySideMin = min(ySides)
-
-            xSide = xSideMax - xSideMin
-            ySide = ySideMax = ySideMin
-            """
             xmin, ymin, xmax, ymax = bbox[0], bbox[1], bbox[2], bbox[3]
             xSide = xmax - xmin
             ySide = ymax - ymin
-
-            print("ySide: ", ySide)
-            print("xSide ", xSide)
-
 
 
             if abs(xSide) > abs(ySide):

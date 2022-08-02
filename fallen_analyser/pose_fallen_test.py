@@ -5,6 +5,7 @@ import glob
 PATH = "test_data/SetElderly/"
 
 def main():
+    #testImageData(distance=False, bbox=False)
     testImageBbox()
     #testVideoBbox()
     #testImageDist()
@@ -122,7 +123,7 @@ def testVideoDistance():
     cap.release()
     cv2.destroyAllWindows()
 
-def testImageData(generate=False):
+def testImageData(**kwargs):
     """
     PURPOSE:This function will test the fallen function given the setElderly
     data, and will write the results in relation to the following metrics.
@@ -149,15 +150,30 @@ def testImageData(generate=False):
     #creating a dictionary of pictures and if they have fallen or not
     actualResults = {pngFiles[ii] : hasFallen[ii] for ii in range(len(pngFiles))}
 
-    if generate:
+    if kwargs["distance"]:
+        print("applying distance fall detection on all images ...")
         distanceResults = applyDistanceFallDetection()
     else:
+        print("reading data from written file distance")
         distanceResults = readToDictonary("results/distance_fall_detection/data.csv")
 
+
+
+    if kwargs["bbox"]:
+        print("applying bounding box detection on all images ...")
+        bboxResults = applyBBoxFallDetection()
+    else:
+        print("reading data from witten file bounding box")
+        bboxResults = readToDictonary("results/bounding_box_fall_detection/data.csv")
+
+    writeToFile("results/bounding_box_fall_detection/actualResults.csv", actualResults)
     writeToFile("results/distance_fall_detection/actualResults.csv", actualResults)
 
-    calcPerformance(actualResults,distanceResults,
-            "results/distance_fall_detection/results.csv")
+    #calcPerformance(actualResults,distanceResults,
+            #"results/distance_fall_detection/results.csv")
+
+    calcPerformance(actualResults, bboxResults,
+            "results/bounding_box_fall_detection/results.csv")
 
 
 
@@ -201,8 +217,15 @@ def calcPerformance(actualDict, resultsDict, savePath):
             else:
                 trueNegatives += 1
 
-    precision = truePostives / (truePostives + falsePositives)
-    recall = truePostives / (truePostives + falseNegatives)
+    if (truePostives > 0) & (falsePositives > 0):
+        precision = truePostives / (truePostives + falsePositives)
+    else:
+        precision = "UNDEFINED"
+
+    if (truePostives > 0) & (falseNegatives > 0):
+        recall = truePostives / (truePostives + falseNegatives)
+    else:
+        recall = "UNDEFINED"
 
     #re-cording how the algorithm performed with the test data provided
     performance["No Detection"] = len(noresultsDict)
@@ -257,8 +280,24 @@ def applyBBoxFallDetection():
     imgPaths = glob.glob(PATH + "*.png")
     obtainedResults = {}
 
-    for currImgPath in imgPath:
+    for currImgPath in imgPaths:
         print(currImgPath)
+        fallen = None
+        img = cv2.imread(currImgPath)
+        results,_ = poseFallen.findPose(img)
+
+        #if they has being results found, we want to calculate if the resident
+        #has fallen given the orientation of the bounding box around torso
+        if results.pose_landmarks:
+            fallen = poseFallen.orientationOfTorso(results, img.shape)
+
+        if fallen:
+            obtainedResults[currImgPath] = str(fallen[0])
+
+    writeToFile("results/bounding_box_fall_detection/data.csv", obtainedResults)
+
+    return obtainedResults
+
 
 def writeToFile(path, data):
     """

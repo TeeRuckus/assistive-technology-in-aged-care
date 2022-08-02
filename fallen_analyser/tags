@@ -4,11 +4,12 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-FALEN_DISTANCE_THRESHOLD	pose_fallen.py	/^FALEN_DISTANCE_THRESHOLD = 350$/;"	v
+FALEN_DISTANCE_THRESHOLD	pose_fallen.py	/^FALEN_DISTANCE_THRESHOLD = 250$/;"	v
 PATH	pose_fallen_test.py	/^PATH = "test_data\/SetElderly\/"$/;"	v
 PoseFallen	pose_fallen.py	/^class PoseFallen():$/;"	c
 VISIBILITY_THRESHOLD	pose_fallen.py	/^VISIBILITY_THRESHOLD = 0.4$/;"	v
-__init__	pose_fallen.py	/^    def __init__(self, dectConf=0.5, trackConf=0.5):$/;"	m	class:PoseFallen
+__init__	pose_fallen.py	/^    def __init__(self, dectConf=0.1, trackConf=0.1):$/;"	m	class:PoseFallen
+applyBBoxFallDetection	pose_fallen_test.py	/^def applyBBoxFallDetection():$/;"	f
 applyDistanceFallDetection	pose_fallen_test.py	/^def applyDistanceFallDetection():$/;"	f
 calcPerformance	pose_fallen_test.py	/^def calcPerformance(actualDict, resultsDict, savePath):$/;"	f
 fallenImage	pose_fallen_test.py	/^def fallenImage(filePath):$/;"	f
@@ -18,10 +19,12 @@ hasFallenDistance	pose_fallen.py	/^    def hasFallenDistance(self, distance):$/;
 hasFallenOrientation	pose_fallen.py	/^    def hasFallenOrientation(self, orientation):$/;"	m	class:PoseFallen
 main	pose_fallen_test.py	/^def main():$/;"	f
 noseHipInView	pose_fallen.py	/^    def noseHipInView(self, results):$/;"	m	class:PoseFallen
-orientationOfTorso	pose_fallen.py	/^    def orientationOfTorso(self, results):$/;"	m	class:PoseFallen
+orientationOfTorso	pose_fallen.py	/^    def orientationOfTorso(self, results, imgShape):$/;"	m	class:PoseFallen
 readToDictonary	pose_fallen_test.py	/^def readToDictonary(path):$/;"	f
-testImage	pose_fallen_test.py	/^def testImage():$/;"	f
-testImageData	pose_fallen_test.py	/^def testImageData(generate=False):$/;"	f
-testVideo	pose_fallen_test.py	/^def testVideo():$/;"	f
+testImageBbox	pose_fallen_test.py	/^def testImageBbox():$/;"	f
+testImageData	pose_fallen_test.py	/^def testImageData(**kwargs):$/;"	f
+testImageDist	pose_fallen_test.py	/^def testImageDist():$/;"	f
+testVideoBbox	pose_fallen_test.py	/^def testVideoBbox():$/;"	f
+testVideoDistance	pose_fallen_test.py	/^def testVideoDistance():$/;"	f
 torsoInView	pose_fallen.py	/^    def torsoInView(self, results):$/;"	m	class:PoseFallen
 writeToFile	pose_fallen_test.py	/^def writeToFile(path, data):$/;"	f
