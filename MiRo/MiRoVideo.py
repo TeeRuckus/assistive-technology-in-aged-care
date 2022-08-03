@@ -26,7 +26,7 @@ from Errors import *
 class MiRoVideo():
 
     def __init__(self, args):
-        self.__mode = self.mode(args)
+        self.__mode = self.__setMode(args)
         self.__inputCamera = [None, None, None]
         self.__imageStitcher = None
         #a converter from the ROS application to OpenCV
@@ -69,13 +69,8 @@ class MiRoVideo():
     def mode(self, args):
         #going through the arguments which might have being set in the programme
 
-        for arg in args:
+        self.__setMode(args)
 
-            #TODO: expand this for more modes of the programme
-            if arg in ["show"]:
-                self.__mode = self.__validateMode(arg)
-            if arg == "--stitch":
-                self.__imageStitcher = True
 
 
     def callbackCam(self, rosImg, indx):
@@ -96,11 +91,11 @@ class MiRoVideo():
         self.callbackCam(rosImg, 0)
 
 
-    def callbackCamR(self, img):
+    def callbackCamR(self, rosImg):
         """
         PURPOSE: To obtain images from the right stereo camera of MiRo
         """
-        self.callbackCamR(rosImg, 1)
+        self.callbackCam(rosImg, 1)
 
     def getVideoFeed(self):
         """
@@ -116,9 +111,9 @@ class MiRoVideo():
             channelsToProcess = [2]
 
         outFile = [None, None, None]
-        outCount = [0] * len(outfile)
+        outCount = [0] * len(outFile)
         t0 = time.time()
-        camNames = ['LEFT', 'RIGHT', 'STITCHED']
+        camNames = ['left', 'right', 'stitched']
 
 
         #main loop for getting data from the stereo cameras of MiRo
@@ -141,14 +136,19 @@ class MiRoVideo():
                 img = self.__inputCamera[ii]
 
 
-                if img:
+                #TODO: make this line more readable
+                #if the image is present
+                if not img is None:
                     #clearing the current image, as we're about to process
                     #the current image
                     self.__inputCamera[ii] = None
 
 
-                    if self.__mode == "SHOW":
+                    #print("mode, ", self.__mode)
+                    if self.__mode == "show":
 
+                        #correcting the color of the image
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         cv2.imshow("Video from MiRo: " + camNames[ii], img)
                         cv2.waitKey(1)
 
@@ -165,14 +165,35 @@ class MiRoVideo():
 
     def __validateMode(self, inMode):
         """
-        PURPOSE: TO ensure that the current mode which has being set for the 
+        PURPOSE: TO ensure that the current mode which has being set for the
         programme is not going to be none
         """
 
-        if self.__mode == None:
+        if inMode == None:
             MiRoError("Stereo Camera mode is not set")
 
         return inMode
+
+    def __setMode(self, args):
+        """
+        PURPOSE: A wrapper to the setter property, so we can use function internally,
+        and as a user
+        """
+        retArg = None
+        if len(args) == 0:
+            MiRoError("Please provide arguments into programme")
+        else:
+            for arg in args:
+                #TODO: expand this for more modes of the programme
+                if arg in ["show"]:
+                    #self.__mode = self.__validateMode(arg)
+                    retArg = self.__validateMode(arg)
+                if arg == "--stitch":
+                    self.__imageStitcher = True
+
+        #self.__validateMode(self.__mode)
+
+        return  retArg
 
 
 
@@ -183,6 +204,7 @@ class MiRoVideo():
 
 if __name__ == "__main__":
     rospy.init_node("miro_video", anonymous=True)
-    main = Video()
+    #hard coding the arguments for now, to see test if the connections will work properly
+    main = MiRoVideo(sys.argv[1:])
     main.getVideoFeed()
 
