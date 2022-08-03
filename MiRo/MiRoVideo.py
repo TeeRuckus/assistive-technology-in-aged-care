@@ -26,9 +26,9 @@ from Errors import *
 class MiRoVideo():
 
     def __init__(self, args):
-        self.__mode = self.__setMode(args)
         self.__inputCamera = [None, None, None]
         self.__imageStitcher = None
+        self.__mode = self.__setMode(args)
         #a converter from the ROS application to OpenCV
         self.__imageConverter = CvBridge()
 
@@ -125,7 +125,7 @@ class MiRoVideo():
                 #performing stitching process of the given images 
 
                 #if both of the cameras are going to have images in them
-                if self.__inputCamera[0] and self.__inputCamera[1]:
+                if not self.__inputCamera[0] is None and not self.__inputCamera[1] is None:
                     imgs = [self.__inputCamera[0], self.__inputCamera[1]]
                     self.__inputCamera[2] = cv2.hconcat(imgs)
                     self.__inputCamera[0] = None
@@ -181,7 +181,9 @@ class MiRoVideo():
         """
         retArg = None
         if len(args) == 0:
-            MiRoError("Please provide arguments into programme")
+            MiRoError("Please provide arguments into programme:\n" +
+                    "\t show: show video (eye cameras) as it arrives from platform\n"+
+                    "\t --stitch stitch stereo images into one image")
         else:
             for arg in args:
                 #TODO: expand this for more modes of the programme
