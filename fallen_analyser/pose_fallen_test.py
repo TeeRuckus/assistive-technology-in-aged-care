@@ -5,13 +5,13 @@ import glob
 PATH = "test_data/SetElderly/"
 
 def main():
-    testImageData(distance=True, bbox=False)
+    #testImageData(distance=True, bbox=False)
     #getFalseNegativesBbox()
-    getFalseNegativesDistance()
+    #getFalseNegativesDistance()
     #testImageBbox()
-    #testVideoBbox()
+    testVideoBbox()
     #testImageDist()
-    #testVideo()
+    #testVideoDistance()
 
 
 def testImageBbox():
@@ -43,13 +43,32 @@ def testVideoBbox():
         _,frame = cap.read()
         results, img = poseFallen.findPose(frame)
 
-        orientation, bbox = poseFallen.orientationOfTorso(results, img.shape)
-        if bbox:
-            cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
-                    (int(bbox[2]), int(bbox[3])), (0,0,255),
-                    thickness=2, lineType=cv2.LINE_AA)
+        inView = poseFallen.torsoInView(results)
+        color = None
+        text = ""
 
-        cv2.imshow("Testing life vide feed", img)
+        if inView:
+            text = "Person in view"
+            color = (0,255,0)
+            orientation, bbox = poseFallen.orientationOfTorso(results, img.shape)
+
+            if bbox:
+                cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                        (int(bbox[2]), int(bbox[3])), (0,255,0),
+                        thickness=2, lineType=cv2.LINE_AA)
+
+                if orientation:
+                    text = "Fallen Resident"
+                    color = (0, 0, 255)
+                    cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                            (int(bbox[2]), int(bbox[3])), (0,0,255),
+                        thickness=2, lineType=cv2.LINE_AA)
+
+
+        img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
+                2, cv2.LINE_AA)
+
+        cv2.imshow("Video Feed", img)
 
         if cv2.waitKey(10) & 0xFF == ord('q'):
             keepOpen = False
@@ -93,11 +112,6 @@ def testVideoDistance():
         _,frame = cap.read()
         results, img = poseFallen.findPose(frame)
 
-        """
-        #seeing if it has found any land marks
-        if results.pose_landmarks:
-            print(results.pose_landmarks.landmark[0])
-        """
 
         inView = poseFallen.torsoInView(results)
 
@@ -105,7 +119,7 @@ def testVideoDistance():
         text = ""
 
         if inView:
-            text = "Person is in view"
+            text = "Person is in View"
             color = (0,255,0)
             distance = poseFallen.getDistance(results, img.shape)
             fallen = poseFallen.hasFallenDistance(distance)
@@ -117,7 +131,7 @@ def testVideoDistance():
         img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
                 2, cv2.LINE_AA)
 
-        cv2.imshow("Testing life vide feed", img)
+        cv2.imshow("Video Feed", img)
 
         if cv2.waitKey(10) & 0xFF == ord('q'):
             keepOpen = False

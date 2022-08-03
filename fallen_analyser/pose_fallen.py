@@ -11,10 +11,10 @@ FALEN_DISTANCE_THRESHOLD = 250
 
 class PoseFallen():
     def __init__(self, dectConf=0.1, trackConf=0.1):
-        self.mpDrawing = mp.solutions.drawing_utils
-        self.mpHolistic = mp.solutions.holistic
-        self.dectConf = dectConf
-        self.trackConf = trackConf
+        self.__mpDrawing = mp.solutions.drawing_utils
+        self.__mpHolistic = mp.solutions.holistic
+        self.__dectConf = dectConf
+        self.__trackConf = trackConf
 
 
     def findPose(self, img, draw=True):
@@ -24,20 +24,20 @@ class PoseFallen():
         """
 
         results = None
-        with self.mpHolistic.Holistic(
-                min_detection_confidence=self.dectConf,
-                min_tracking_confidence=self.trackConf) as holistic:
+        with self.__mpHolistic.Holistic(
+                min_detection_confidence=self.__dectConf,
+                min_tracking_confidence=self.__trackConf) as holistic:
 
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             results = holistic.process(img)
 
             if results:
                 if draw:
-                    self.mpDrawing.draw_landmarks(img, 
+                    self.__mpDrawing.draw_landmarks(img, 
                             results.pose_landmarks,
-                            self.mpHolistic.POSE_CONNECTIONS, 
-                            self.mpDrawing.DrawingSpec(color=(66,117,245), thickness=2, circle_radius=2),
-                            self.mpDrawing.DrawingSpec(color=(230,66,245), thickness=2, circle_radius=2))
+                            self.__mpHolistic.POSE_CONNECTIONS, 
+                            self.__mpDrawing.DrawingSpec(color=(66,117,245), thickness=2, circle_radius=2),
+                            self.__mpDrawing.DrawingSpec(color=(230,66,245), thickness=2, circle_radius=2))
 
 
         return results, cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -52,10 +52,10 @@ class PoseFallen():
         #checking if any landmarks are found in the image
         if landmarkFound:
             landmark = landmarkFound.landmark
-            leftShoulder = landmark[self.mpHolistic.PoseLandmark.LEFT_SHOULDER.value].visibility
-            rightShoulder = landmark[self.mpHolistic.PoseLandmark.RIGHT_SHOULDER.value].visibility
-            leftHip = landmark[self.mpHolistic.PoseLandmark.LEFT_HIP.value].visibility
-            rightHip = landmark[self.mpHolistic.PoseLandmark.RIGHT_HIP.value].visibility
+            leftShoulder = landmark[self.__mpHolistic.PoseLandmark.LEFT_SHOULDER.value].visibility
+            rightShoulder = landmark[self.__mpHolistic.PoseLandmark.RIGHT_SHOULDER.value].visibility
+            leftHip = landmark[self.__mpHolistic.PoseLandmark.LEFT_HIP.value].visibility
+            rightHip = landmark[self.__mpHolistic.PoseLandmark.RIGHT_HIP.value].visibility
 
 
             if (leftShoulder >= VISIBILITY_THRESHOLD) & (rightShoulder >= VISIBILITY_THRESHOLD) \
@@ -73,8 +73,8 @@ class PoseFallen():
 
         if landMarkFound: 
             landmark = landMarkFound.landmark
-            nose = landmark[self.mpHolistic.PoseLandmark.NOSE.value].visibility
-            hip = landmark[self.mpHolistic.PoseLandmark.RIGHT_HIP.value].visibility
+            nose = landmark[self.__mpHolistic.PoseLandmark.NOSE.value].visibility
+            hip = landmark[self.__mpHolistic.PoseLandmark.RIGHT_HIP.value].visibility
 
             if (nose >= VISIBILITY_THRESHOLD) & (hip >= VISIBILITY_THRESHOLD):
                 inView = True
@@ -96,10 +96,10 @@ class PoseFallen():
             fallen = False
             landmark = landmark.landmark
 
-            lShoulder = landmark[self.mpHolistic.PoseLandmark.LEFT_SHOULDER.value]
-            rShoulder = landmark[self.mpHolistic.PoseLandmark.RIGHT_SHOULDER.value]
-            lHip = landmark[self.mpHolistic.PoseLandmark.LEFT_HIP.value]
-            rHip = landmark[self.mpHolistic.PoseLandmark.RIGHT_HIP.value]
+            lShoulder = landmark[self.__mpHolistic.PoseLandmark.LEFT_SHOULDER.value]
+            rShoulder = landmark[self.__mpHolistic.PoseLandmark.RIGHT_SHOULDER.value]
+            lHip = landmark[self.__mpHolistic.PoseLandmark.LEFT_HIP.value]
+            rHip = landmark[self.__mpHolistic.PoseLandmark.RIGHT_HIP.value]
 
             #normalising the x and y direction, so it's not a value from [0,1]
             #but instead a value in relation to the dimensions of the image
@@ -134,7 +134,7 @@ class PoseFallen():
         #checking  if any landmarks are found in the image 
         if landmarkFound:
             landmark = landmarkFound.landmark
-            head = landmark[self.mpHolistic.PoseLandmark.NOSE.value]
+            head = landmark[self.__mpHolistic.PoseLandmark.NOSE.value]
             #we're going to assume that the left and right hip are going to be
             #mediapipe returns width and height numbers between [0,1]. Therefore,
             #normalising width and height to size of image
