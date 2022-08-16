@@ -1,6 +1,14 @@
 import mediapipe as mp
 import numpy as np
 import cv2
+import rospy
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Bool
+from cv_bridge import CvBridge, CvBridgeError
+import sys
+import os
+from Errors import *
+import time
 
 VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 240
@@ -8,14 +16,59 @@ VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 350
 #FALEN_DISTANCE_THRESHOLD = 290
 FALEN_DISTANCE_THRESHOLD = 250
+NODE_NAME = "pose_fallen"
 
 class PoseFallen():
-    def __init__(self, dectConf=0.1, trackConf=0.1):
+    def __init__(self,args, dectConf=0.1, trackConf=0.1):
         self.__mpDrawing = mp.solutions.drawing_utils
+        self.__imageStitcher = None
+        self.__mode = self.__setMode(args)
+        self.__inputCamera = [None] * 3
         self.__mpHolistic = mp.solutions.holistic
+        self.__imageConverter = CvBridge()
         self.__dectConf = dectConf
         self.__trackConf = trackConf
+        self.__cvBridge = CvBridge()
+        #to store images for left, right, and stitched images
+        self.__miroImgs = [None]*3
 
+
+        #subscribing to the required nodes and the data
+        rospy.init_node(NODE_NAME, anonymous=True)
+        topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
+
+
+        #TODO: You'll need to come back and delete this CODE
+        camLTopic = topicBaseName + "/sensors/caml/compressed"
+        camRTopic = topicBaseName + "/sensors/camr/compressed"
+        #TODO: you'll have to come back and see if this is going to be necessary
+
+        self.__camL = rospy.Subscriber(camLTopic, CompressedImage,
+                self.callbackCamL, queue_size=1, tcp_nodelay=True)
+
+        self.__camR = rospy.Subscriber(camRTopic, CompressedImage,
+                self.callbackCamR, queue_size=1, tcp_nodelay=True)
+
+    @property
+    def imageStitcher(self):
+        """
+        PURPOSE: A getter for the imageStitcher class field
+        """
+        return self.__imageStitcher
+
+    @property
+    def mode(self):
+        """
+        PURPOSE: A getter for the mode class field
+        """
+        return self.__mode
+
+    @property
+    def inputCamera(self):
+        """
+        PURPOSE: A getter for the inputCamera class field
+        """
+        return self.__inputCamera
 
     def findPose(self, img, draw=True):
         """
@@ -158,6 +211,166 @@ class PoseFallen():
         return fallen
 
 
+    def getImage(self):
+        """
+        PURPOSE: To subscribe to the stereo cameras of MiRo, and to get the 
+        necessary image file 
+        """
+
+
+    def publishFallen(self):
+        """
+        PURPOSE: To publish whether a resident has fallen or not in the current
+        fames
+        """
+
+        #TODO: COME BACK TO THIS, and see how you're going to publish this
+        #message
+        hasFallen = False
+        pub = rospy.Publisher(NODE_NAME, Bool,queue_size=10)
+
+
+        pub.publish(hasFallen)
+
+
+
     def hasFallenOrientation(self, orientation):
         """
         """
+
+
+    def callbackCam(self, rosImg, indx):
+        """
+        PURPOSE: To grab image data from a camera specified by index
+        """
+        try:
+            img = self.__imageConverter.compressed_imgmsg_to_cv2(rosImg, "rgb8")
+            self.__inputCamera[indx] = img
+
+        except CvBridgeError as e:
+            print("callbackCam Error: ", e)
+
+    def callbackCamL(self, rosImg):
+        """
+        PURPOSE: To obtain images from the left stereo camera of MiRO
+        """
+        self.callbackCam(rosImg, 0)
+
+
+    def callbackCamR(self, rosImg):
+        """
+        PURPOSE: To obtain images from the right stereo camera of MiRo
+        """
+        self.callbackCam(rosImg, 1)
+
+    def getVideoFeed(self): 
+        """
+        PURPOSE: Responsible from getting raw video data from the stereo camera 
+        of MiRo.
+        """
+        # state
+        channelsToProcess = [0, 1]
+
+        if not self.__imageStitcher is None:
+            channelsToProcess = [2]
+
+        outFile = [None, None, None]
+        outCount = [0] * len(outFile)
+        t0 = time.time()
+        camNames = ['left', 'right', 'stitched']
+
+
+        #main loop for getting data from the stereo cameras of MiRo
+        while not rospy.core.is_shutdown():
+            #if we're required to stitch the images
+            if not self.__imageStitcher is None:
+                #performing stitching process of the given images 
+
+                #if both of the cameras are going to have images in them
+                if not self.__inputCamera[0] is None and not self.__inputCamera[1] is None:
+                    imgs = [self.__inputCamera[0], self.__inputCamera[1]]
+                    self.__inputCamera[2] = cv2.hconcat(imgs)
+                    self.__inputCamera[0] = None
+                    self.__inputCamera[1] = None
+
+            #only publish the images, if they is going to be an image to 
+            #publish
+
+
+            for ii in channelsToProcess:
+                #getting the current image
+                img = self.__inputCamera[ii]
+
+
+
+                #TODO: make this line more readable
+                #if the image is present
+                if not img is None:
+                    #clearing the current image, as we're about to process
+                    #the current image
+                    self.__inputCamera[ii] = None
+
+
+                    #print("mode, ", self.__mode)
+                    if self.__mode == "show":
+
+                        #correcting the color of the image
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        cv2.imshow("Video from MiRo: " + camNames[ii], img)
+                        cv2.waitKey(1)
+
+                    #add more modes here for the program
+
+                    #publishing the found node
+
+            #processing frames at 50Hz
+            time.sleep(0.02)
+
+        for ii in range(len(outFile)):
+            pass
+
+    def __setMode(self, args):
+        """
+        PURPOSE: A wrapper to the setter property, so we can use function internally,
+        and as a user
+        """
+        retArg = None
+        if len(args) == 0:
+            MiRoError("Please provide arguments into programme:\n" +
+                    "\t show: show video (eye cameras) as it arrives from platform\n"+
+                    "\t --stitch stitch stereo images into one image")
+        else:
+            for arg in args:
+                #TODO: expand this for more modes of the programme
+                if arg in ["show"]:
+                    #self.__mode = self.__validateMode(arg)
+                    retArg = self.__validateMode(arg)
+                if arg == "--stitch":
+                    self.__imageStitcher = True
+
+        #self.__validateMode(self.__mode)
+
+        return  retArg
+
+    def __validateMode(self, inMode):
+        """
+        PURPOSE: TO ensure that the current mode which has being set for the
+        programme is not going to be none
+        """
+
+        if inMode == None:
+            MiRoError("Stereo Camera mode is not set")
+
+        return inMode
+
+
+#the code of the main loop which is needed for this node
+if __name__ == "__main__": 
+    rospy.loginfo("Started pose fallen node")
+
+    #starting the  video feed and analysing if person has fallen in frames
+    main = PoseFallen(sys.argv[1:])
+    main.getVideoFeed()
+
+
+

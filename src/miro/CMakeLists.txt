@@ -111,6 +111,9 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+catkin_install_python(PROGRAMS scripts/MiRoVideo.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
