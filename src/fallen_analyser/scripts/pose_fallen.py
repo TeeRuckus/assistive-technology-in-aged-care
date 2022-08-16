@@ -330,7 +330,6 @@ class PoseFallen():
 
                             img = self.showBBox(results, img)
                         elif self.__pose:
-
                             if self.__verbose:
                                 rospy.loginfo_once("Showing pose from media pipe")
 
@@ -374,7 +373,7 @@ class PoseFallen():
 
                 if orientation:
                     text = "Fallen Resident"
-                    color = (0, 0, 255)
+                    color = (255, 0, 0)
                     cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
                             (int(bbox[2]), int(bbox[3])), (0,0,255),
                         thickness=2, lineType=cv2.LINE_AA)
@@ -390,6 +389,27 @@ class PoseFallen():
         PURPOSE: To show the results fr the mediapipe algorithm from MiRo's 
         stereo cameras
         """
+
+        inView = self.torsoInView(results)
+
+        color = None
+
+        text = ""
+
+        if inView:
+            text = "Person is in View"
+            color = (0,255,0)
+            distance = self.getDistance(results, img.shape)
+            fallen = self.hasFallenDistance(distance)
+
+            if fallen:
+                text = "Fallen Resident"
+                color = (255, 0, 0)
+
+        img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
+                2, cv2.LINE_AA)
+
+        return img
 
     def __setMode(self, args):
         """
