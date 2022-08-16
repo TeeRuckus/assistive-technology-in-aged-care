@@ -9,7 +9,7 @@ import sys
 import os
 from Errors import *
 import time
-from fallen_analyser.msg import cords
+from fallen_analyser.msg import coords
 
 
 VISIBILITY_THRESHOLD = 0.4
@@ -64,7 +64,7 @@ class PoseFallen():
             rospy.loginfo("Creating Publisher, to publish coordinates")
 
         self.__coordsPub = rospy.Publisher("resident/coords/",
-                cords, queue_size=10)
+                coords, queue_size=10)
 
     @property
     def imageStitcher(self):
@@ -332,18 +332,18 @@ class PoseFallen():
                     results, img = self.findPose(img)
 
                     #TODO: You'll need to publish this to a topic
-                    cordsFound = self.getNoseCordinates(results, img.shape)
+                    coordsFound = self.getNoseCordinates(results, img.shape)
 
                     #gaurding against publish none messages
-                    if cordsFound:
-                        pubCords = cords()
-                        pubCords.xCord.data = cordsFound[0]
-                        pubCords.yCord.data = cordsFound[1]
-                        self.__coordsPub.publish(pubCords)
+                    if coordsFound:
+                        pubCoords = coords()
+                        pubCoords.xCord.data = coordsFound[0]
+                        pubCoords.yCord.data = coordsFound[1]
+                        self.__coordsPub.publish(pubCoords)
 
-                    if cordsFound and self.__verbose:
-                        rospy.loginfo("Coordinates: %s %s" % (cordsFound[0],
-                            cordsFound[1]))
+                    if coordsFound and self.__verbose:
+                        rospy.loginfo("Coordinates: %s %s" % (coordsFound[0],
+                            coordsFound[1]))
 
                     #print("mode, ", self.__mode)
                     if self.__mode == "show":

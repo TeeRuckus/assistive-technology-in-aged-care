@@ -1,8 +1,8 @@
 
 "use strict";
 
-let cords = require('./cords.js');
+let coords = require('./coords.js');
 
 module.exports = {
-  cords: cords,
+  coords: coords,
 };
