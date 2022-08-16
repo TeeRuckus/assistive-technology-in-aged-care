@@ -235,6 +235,7 @@ class MiRoVideo():
                     #publishing the found node
 
             #processing frames at 50Hz
+            #TODO: Play with this to see if you'll get better results 
             time.sleep(0.02)
 
         for ii in range(len(outFile)):

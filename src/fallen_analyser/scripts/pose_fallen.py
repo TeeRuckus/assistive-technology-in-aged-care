@@ -3,12 +3,13 @@ import numpy as np
 import cv2
 import rospy
 from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import sys
 import os
 from Errors import *
 import time
+from fallen_analyser.msg import cords
 
 
 VISIBILITY_THRESHOLD = 0.4
@@ -38,6 +39,9 @@ class PoseFallen():
 
 
         #subscribing to the required nodes and the data
+        if self.__verbose:
+            rospy.loginfo("Creating main node %s" % NODE_NAME)
+
         rospy.init_node(NODE_NAME, anonymous=True)
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
 
@@ -55,6 +59,12 @@ class PoseFallen():
 
         self.__camR = rospy.Subscriber(camRTopic, CompressedImage,
                 self.callbackCamR, queue_size=1, tcp_nodelay=True)
+
+        if self.__verbose:
+            rospy.loginfo("Creating Publisher, to publish coordinates")
+
+        self.__coordsPub = rospy.Publisher("resident/coords/",
+                cords, queue_size=10)
 
     @property
     def imageStitcher(self):
@@ -186,6 +196,9 @@ class PoseFallen():
 
     def getDistance(self, results, imgShape):
         """
+        PURPOSE: Gets distance of resident between their nose and knees. This
+        distance is monitored to ensure resident has fallen if, distance below
+        programmed threshold the resident has fallen and needs assistance.
         """
 
         distance = None
@@ -254,6 +267,7 @@ class PoseFallen():
             img = self.__imageConverter.compressed_imgmsg_to_cv2(rosImg, "rgb8")
             self.__inputCamera[indx] = img
 
+
         except CvBridgeError as e:
             print("callbackCam Error: ", e)
 
@@ -303,13 +317,9 @@ class PoseFallen():
             #only publish the images, if they is going to be an image to 
             #publish
 
-
             for ii in channelsToProcess:
                 #getting the current image
                 img = self.__inputCamera[ii]
-
-
-
 
                 #TODO: make this line more readable
                 #if the image is present
@@ -321,18 +331,30 @@ class PoseFallen():
                     #getting results from the current frame
                     results, img = self.findPose(img)
 
+                    #TODO: You'll need to publish this to a topic
+                    cordsFound = self.getNoseCordinates(results, img.shape)
+
+                    #gaurding against publish none messages
+                    if cordsFound:
+                        pubCords = cords()
+                        pubCords.xCord.data = cordsFound[0]
+                        pubCords.yCord.data = cordsFound[1]
+                        self.__coordsPub.publish(pubCords)
+
+                    if cordsFound and self.__verbose:
+                        rospy.loginfo("Coordinates: %s %s" % (cordsFound[0],
+                            cordsFound[1]))
+
                     #print("mode, ", self.__mode)
                     if self.__mode == "show":
 
                         if self.__bbox:
                             if  self.__verbose:
                                 rospy.loginfo_once("Showing Bounding box mode")
-
                             img = self.showBBox(results, img)
                         elif self.__pose:
                             if self.__verbose:
                                 rospy.loginfo_once("Showing pose from media pipe")
-
                             img = self.showPose(results, img)
 
                         #correcting the color of the image
@@ -344,11 +366,32 @@ class PoseFallen():
 
                     #publishing the found node
 
-            #processing frames at 50Hz
+            #processing frames at 50Hz. You can try 0.01HZ
             time.sleep(0.02)
 
         for ii in range(len(outFile)):
             pass
+
+    def getNoseCordinates(self, results, imgShape):
+        """
+        ASSERTION: MiRo will always know the location of the face of the
+        the resident
+        """
+        coords = None
+        #by the looks of it, it's going to be just s tuple, and this tuple is 
+        #literally going to be the x and y variables of the coordinates which you 
+        #want to find and use in the image which you'll have
+
+        landmarkFound = results.pose_landmarks
+
+        if landmarkFound:
+            landmark = landmarkFound.landmark
+            head = landmark[self.__mpHolistic.PoseLandmark.NOSE.value]
+            coords = (head.x * imgShape[1], head.y * imgShape[0])
+
+        return coords
+
+
 
     def showBBox(self, results, img):
         """
