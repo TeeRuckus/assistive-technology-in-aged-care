@@ -10,6 +10,7 @@ import os
 from Errors import *
 import time
 
+
 VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 240
 #FALEN_DISTANCE_THRESHOLD = 300
@@ -22,7 +23,6 @@ class PoseFallen():
     def __init__(self,args, dectConf=0.1, trackConf=0.1):
         self.__mpDrawing = mp.solutions.drawing_utils
         self.__imageStitcher = None
-        self.__mode = self.__setMode(args)
         self.__inputCamera = [None] * 3
         self.__mpHolistic = mp.solutions.holistic
         self.__imageConverter = CvBridge()
@@ -31,6 +31,10 @@ class PoseFallen():
         self.__cvBridge = CvBridge()
         #to store images for left, right, and stitched images
         self.__miroImgs = [None]*3
+        self.__verbose = False
+        self.__bbox = False
+        self.__pose = False
+        self.__mode = self.__setMode(args)
 
 
         #subscribing to the required nodes and the data
@@ -42,6 +46,9 @@ class PoseFallen():
         camLTopic = topicBaseName + "/sensors/caml/compressed"
         camRTopic = topicBaseName + "/sensors/camr/compressed"
         #TODO: you'll have to come back and see if this is going to be necessary
+
+        if self.__verbose:
+            rospy.loginfo("subscribing to left and right camera ... ")
 
         self.__camL = rospy.Subscriber(camLTopic, CompressedImage,
                 self.callbackCamL, queue_size=1, tcp_nodelay=True)
@@ -303,6 +310,7 @@ class PoseFallen():
 
 
 
+
                 #TODO: make this line more readable
                 #if the image is present
                 if not img is None:
@@ -310,9 +318,23 @@ class PoseFallen():
                     #the current image
                     self.__inputCamera[ii] = None
 
+                    #getting results from the current frame
+                    results, img = self.findPose(img)
 
                     #print("mode, ", self.__mode)
                     if self.__mode == "show":
+
+                        if self.__bbox:
+                            if  self.__verbose:
+                                rospy.loginfo_once("Showing Bounding box mode")
+
+                            img = self.showBBox(results, img)
+                        elif self.__pose:
+
+                            if self.__verbose:
+                                rospy.loginfo_once("Showing pose from media pipe")
+
+                            img = self.showPose(results, img)
 
                         #correcting the color of the image
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -329,11 +351,52 @@ class PoseFallen():
         for ii in range(len(outFile)):
             pass
 
+    def showBBox(self, results, img):
+        """
+        PURPOSE: To show the results for the bounding box algorithm from MiRo's 
+        stereo cameras
+        """
+
+        inView = self.torsoInView(results)
+        color = None
+        text = ""
+
+        if inView:
+            text = "Person in view"
+            color = (0,255,0)
+            orientation, bbox = self.orientationOfTorso(results, img.shape)
+
+
+            if bbox:
+                cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                        (int(bbox[2]), int(bbox[3])), (0,255,0),
+                        thickness=2, lineType=cv2.LINE_AA)
+
+                if orientation:
+                    text = "Fallen Resident"
+                    color = (0, 0, 255)
+                    cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                            (int(bbox[2]), int(bbox[3])), (0,0,255),
+                        thickness=2, lineType=cv2.LINE_AA)
+
+        img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
+                2, cv2.LINE_AA)
+
+        return img
+
+
+    def showPose(self, results, img):
+        """
+        PURPOSE: To show the results fr the mediapipe algorithm from MiRo's 
+        stereo cameras
+        """
+
     def __setMode(self, args):
         """
         PURPOSE: A wrapper to the setter property, so we can use function internally,
         and as a user
         """
+        #TODO: Try to re-factor this so you can use the argparser module for it to be cleaner
         retArg = None
         if len(args) == 0:
             MiRoError("Please provide arguments into programme:\n" +
@@ -344,9 +407,21 @@ class PoseFallen():
                 #TODO: expand this for more modes of the programme
                 if arg in ["show"]:
                     #self.__mode = self.__validateMode(arg)
+                    #TODO: You'll need to come back and check the logic of this file
                     retArg = self.__validateMode(arg)
+
+                if arg == "--verbose":
+                    self.__verbose = True
+
                 if arg == "--stitch":
                     self.__imageStitcher = True
+
+                if arg == "bounding_box":
+                    self.__bbox = True
+
+                if arg == "pose":
+                    self.__pose = True
+
 
         #self.__validateMode(self.__mode)
 
