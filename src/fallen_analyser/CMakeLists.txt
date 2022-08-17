@@ -113,7 +113,7 @@ catkin_package(
 )
 
 
-catkin_install_python(PROGRAMS scripts/pose_fallen.py
+catkin_install_python(PROGRAMS scripts/pose_fallen.py 
     scripts/Errors.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )

@@ -10,6 +10,7 @@ import os
 from Errors import *
 import time
 from fallen_analyser.msg import coords
+import miro2 as miro
 
 
 VISIBILITY_THRESHOLD = 0.4
@@ -19,6 +20,8 @@ VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 290
 FALEN_DISTANCE_THRESHOLD = 250
 NODE_NAME = "pose_fallen"
+
+#TODO: You'll need to test if the conversation with constants have worked here
 
 class PoseFallen():
     def __init__(self,args, dectConf=0.1, trackConf=0.1):
@@ -275,14 +278,14 @@ class PoseFallen():
         """
         PURPOSE: To obtain images from the left stereo camera of MiRO
         """
-        self.callbackCam(rosImg, 0)
+        self.callbackCam(rosImg, miro.constants.CAM_L)
 
 
     def callbackCamR(self, rosImg):
         """
         PURPOSE: To obtain images from the right stereo camera of MiRo
         """
-        self.callbackCam(rosImg, 1)
+        self.callbackCam(rosImg, miro.constants.CAM_R)
 
     def getVideoFeed(self): 
         """
