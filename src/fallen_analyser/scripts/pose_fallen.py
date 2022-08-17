@@ -334,8 +334,13 @@ class PoseFallen():
                     #getting results from the current frame
                     results, img = self.findPose(img)
 
-                    #TODO: You'll need to publish this to a topic
-                    coordsFound = self.getNoseCordinates(results, img.shape)
+                    #TODO: you'll need to double check with Tele if this is going to be acceptable
+                    resultsPub, imgPub = self.findPose(
+                            self.__inputCamera[miro.constants.CAM_R])
+
+                    #only going to publish coordinates from the left eye
+                    coordsFound = self.getNoseCordinates(resultsPub,
+                        imgPub.shape)
 
                     #gaurding against publish none messages
                     if coordsFound:

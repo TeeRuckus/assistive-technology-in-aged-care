@@ -11,10 +11,11 @@ from std_msgs.msg import UInt8, UInt16, UInt32, Float32MultiArray, UInt16MultiAr
 from geometry_msgs.msg import Twist, TwistStamped
 from sensor_msgs.msg import JointState, Imu
 from Errors import *
+from  miro2.lib.RobotInterface import RobotInterface
 #from enum import Enum
 
 NODE_NAME = "MiRoKinematics"
-BUFFER_MAX = 2
+BUFFER_MAX = 5
 
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
@@ -30,7 +31,7 @@ class MiRoKinematics:
         self.__kinHead.position = [0.0, math.radians(34.0), 0.0, 0.0]
         self.__startTime = 0.0
         #self.__kinHead.name = ["TILT", "LIFT", "YAW", "PITCH"]
-        self.__facePos = np.zeros(2)
+        self.__facePos = (0,0)
 
         rospy.init_node(NODE_NAME, anonymous=True)
 
@@ -56,6 +57,7 @@ class MiRoKinematics:
         ASSERTION: Moves head to given xCord and yCord, if points are wthin
         MiRo's workspace
         """
+        timeHeadDelay = 0
 
         while not rospy.core.is_shutdown():
             if self.__verbose:
@@ -65,38 +67,61 @@ class MiRoKinematics:
             timeHeadDelay = time.time() - self.__startTime
 
 
-            #don't want to change the pose wile the head is already moving
-            if abs(self.__facePos[0]) > 100 and self.__headMoving:
-                self.__kinHead.position[miro.constants.JOINT_YAW] += \
+            print("x: ", self.__facePos[0])
+            self.__kinHead.position[miro.constants.JOINT_YAW] = \
                 self.moveHead2XCoord(self.__facePos[0])
+            print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
+
+            self.checkHeadWorkspaceYaw()
+            self.checkHeadWorkSpaceLift()
+            self.checkHeadWorkSpacePitch()
+            self.__pubKin.publish(self.__kinHead)
+
+
+
+            #don't want to change the position wile the head is moving 
+            #if abs(self.__facePos[0]) > 100 and not self.__headMoving:
+            """
+            if abs(self.__facePos[0]) > 100 and not self.__headMoving == True:
+                print("x: ", self.__facePos[0])
+                self.__kinHead.position[miro.constants.JOINT_YAW] += \
+                    self.moveHead2XCoord(self.__facePos[0])
+
+                print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
                 self.__headMoving = True
                 self.__startTime = time.time()
 
 
-            #restricting movement to one direction for now
-            """
-            if abs(self.__facePos[1] > 30:
+
+            if abs(self.__facePos[1]) > 30 and not self.__headMoving == True:
                 self.__kinHead.position[miro.constants.JOINT_LIFT] += \
-                self.moveHead2YCoord(self.__facePos[1])
+                    self.moveHead2YCoord(self.__facePos[1])
 
-            """
+                self.__headMoving = True
+                self.__startTime = time.time()
 
-            self.checkHeadWorkSpaceLift()
-            self.checkHeadWorkspaceYaw()
+            if not self.__headMoving == True:
+                self.__headMoving = True
+                self.__startTime = time.time()
+
+            if self.__headMoving == True:
+                pass
+
 
             if timeHeadDelay > 1:
                 self.__headMoving = False
+                #resetting the delay back to 0
+                timeHeadDelay = 0
 
             if self.__verbose:
                 rospy.loginfo("LIFT: %.2f , PITCH: %.2f , YAW: %.2f" %
                         (self.__kinHead.position[miro.constants.JOINT_TILT],
                             self.__kinHead.position[miro.constants.JOINT_PITCH],
                             self.__kinHead.position[miro.constants.JOINT_YAW]))
+            """
 
-            #not publish as yet, don't want to break robot
-            self.__pubKin.publish(self.__kinHead)
 
-            #processing coordinates at 50Hz. You might need to do 1.5 seconds for this
+
             time.sleep(0.02)
 
 
@@ -104,13 +129,20 @@ class MiRoKinematics:
         """
         ASSERTION:
         """
-        return math.radians((dx)*-0.05)
+        #the middle of 
+        retCoord = 0
+        self.__startTime = time.time()
+        self.__headMoving = True
+        return math.radians((dx)*-0.1)
+        #return math.radians((dx)*0.05)
 
 
     def moveHead2YCoord(self, dy):
         """
         ASSERTION:
         """
+        self.__startTime = time.time()
+        self.__headMoving = True
         #THIS IS GOING TO BE WITH LIFT
         return math.radians((abs(dy)-20)*np.sign(dy)*0.3)
 
@@ -128,6 +160,7 @@ class MiRoKinematics:
             self.__kinHead.position[miro.constants.JOINT_LIFT] = \
             miro.constants.LIFT_RAD_MAX - BUFFER_MAX
             workspaceOkay = False
+            self.__headMoving = True
 
             if self.__verbose:
                 rospy.loginfo("Miro has reached lift max")
@@ -136,12 +169,11 @@ class MiRoKinematics:
             self.__kinHead.position[miro.constants.JOINT_TILT] = \
             miro.constants.LIFT_RAD_MIN + BUFFER_MAX
             workspaceOkay = False
+            self.__headMoving = True
 
             if self.__verbose:
                 rospy.loginfo("Miro has reached lift minimum")
 
-        self.__headMoving = True
-        self.__startTime = time.time()
 
         return workspaceOkay
 
@@ -186,6 +218,7 @@ class MiRoKinematics:
             miro.constants.YAW_RAD_MAX - BUFFER_MAX
 
             workspaceOkay = False
+            self.__headMoving = True
             if self.__verbose:
                 rospy.loginfo("Miro has reached yaw's max")
 
@@ -194,11 +227,9 @@ class MiRoKinematics:
             miro.constants.YAW_RAD_MIN + BUFFER_MAX
 
             workspaceOkay = False
+            self.__headMoving = True
             if self.__verbose:
                 rospy.loginfo("Miro has reached yaw's minimum")
-
-        self.__headMoving = True
-        self.__startTime = time.time()
 
         return workspaceOkay
 
@@ -262,13 +293,12 @@ class MiRoKinematics:
         """
         ASSERTION:
         """
-
-        self.__facePos[0] = data.xCord.data
-        self.__facePos[1] = data.yCord.data
+        #add another point to the path of residents head
+        self.__facePos = (int(data.xCord.data), int(data.yCord.data))
 
         if self.__verbose:
-            rospy.loginfo(rospy.get_caller_id() + " x Cords: %s", data.xCord.data)
-            rospy.loginfo(rospy.get_caller_id() + " y Cords: %s\n", data.yCord.data)
+            rospy.loginfo("received Coordinates: (%.3f, %.3f)" %
+                    (data.xCord.data, data.yCord.data))
 
 
     def callbackKin(self, msg):
@@ -296,9 +326,12 @@ class MiRoKinematics:
 
 if __name__ == "__main__":
     miroRobot = MiRoKinematics()
-    miroRobot.verbose = True
+    #miroRobot.verbose = True
     miroRobot.moveHeadCords()
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
+
+    #disconnecting from robot
+    RobotInterface.disconnect
 
 
