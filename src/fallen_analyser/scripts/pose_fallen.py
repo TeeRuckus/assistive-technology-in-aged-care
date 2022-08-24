@@ -20,6 +20,7 @@ VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 290
 FALEN_DISTANCE_THRESHOLD = 250
 NODE_NAME = "pose_fallen"
+FALLEN_COUNT_THRESHOLD = 6
 
 #TODO: You'll need to test if the conversation with constants have worked here
 
@@ -39,7 +40,11 @@ class PoseFallen():
         self.__bbox = False
         self.__pose = False
         self.__mode = self.__setMode(args)
-
+        #counter to make sure that the person in the frame has fallen, and it's not 
+        #a false negative of fallen person
+        self.__fallenCounter = 0
+        self.__leftCamFallen = False
+        self.__rightCamFallen = False
 
         #subscribing to the required nodes and the data
         if self.__verbose:
@@ -154,7 +159,6 @@ class PoseFallen():
 
         return inView
 
-
     def orientationOfTorso(self, results, imgShape):
         """
 
@@ -196,7 +200,6 @@ class PoseFallen():
 
         return fallen , bbox
 
-
     def getDistance(self, results, imgShape):
         """
         PURPOSE: Gets distance of resident between their nose and knees. This
@@ -233,34 +236,37 @@ class PoseFallen():
 
         return fallen
 
-
     def getImage(self):
         """
         PURPOSE: To subscribe to the stereo cameras of MiRo, and to get the 
         necessary image file 
         """
 
-
-    def publishFallen(self):
+    def publishFallen(self, fallenTrigger):
         """
-        PURPOSE: To publish whether a resident has fallen or not in the current
-        fames
+        PURPOSE: To publish whether a resident has fallen or not from the
+        previous frames of the algorithm
         """
-
-        #TODO: COME BACK TO THIS, and see how you're going to publish this
-        #message
+        #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
         hasFallen = False
+
+        rospy.loginfo("The current count: %s" % self.__fallenCounter)
+        if fallenTrigger:
+            self.__fallenCounter += 1
+            if self.__fallenCounter >= FALLEN_COUNT_THRESHOLD:
+                rospy.loginfo("THE PERSON HAS DEFINITELY FALLEN AND I SHOULD DO SOMETHING ABOUT IT")
+
+        #only reset if both cameras don't have a fallen resident in their frame
+        if not(self.__leftCamFallen) and not(self.__rightCamFallen):
+            self.__fallenCounter = 0
+
+
+        """
+        #TODO: you will need to change the name to something more informative
         pub = rospy.Publisher(NODE_NAME, Bool,queue_size=10)
 
-
         pub.publish(hasFallen)
-
-
-
-    def hasFallenOrientation(self, orientation):
         """
-        """
-
 
     def callbackCam(self, rosImg, indx):
         """
@@ -279,7 +285,6 @@ class PoseFallen():
         PURPOSE: To obtain images from the left stereo camera of MiRO
         """
         self.callbackCam(rosImg, miro.constants.CAM_L)
-
 
     def callbackCamR(self, rosImg):
         """
@@ -318,8 +323,7 @@ class PoseFallen():
                     self.__inputCamera[1] = None
 
             #only publish the images, if they is going to be an image to 
-            #publish
-
+            #publish, and the only channels to process is either left or right
             for ii in channelsToProcess:
                 #getting the current image
                 img = self.__inputCamera[ii]
@@ -356,10 +360,19 @@ class PoseFallen():
                     #print("mode, ", self.__mode)
                     if self.__mode == "show":
 
+                        #TODO: you will need to move all these things in a function
                         if self.__bbox:
                             if  self.__verbose:
                                 rospy.loginfo_once("Showing Bounding box mode")
-                            img = self.showBBox(results, img)
+                            img, hasFallen = self.showBBox(results, img)
+
+                            if hasFallen:
+                                self.toggleCameraStatesON(ii)
+                            else:
+                                self.toggleCameraStatesOFF(ii)
+                            self.chooseCameraFallen(hasFallen)
+
+                        #TODO: you will need to move all these things in a function
                         elif self.__pose:
                             if self.__verbose:
                                 rospy.loginfo_once("Showing pose from media pipe")
@@ -380,6 +393,55 @@ class PoseFallen():
         for ii in range(len(outFile)):
             pass
 
+    def chooseCameraFallen(self, hasFallen):
+        """
+        ASSERTION: the camera which has a fallen resident will be chosen. If
+        both of the cameras have a fallen resident, then the algorithm will
+        default to also choose the one which has more of the person in its
+        current frame of view
+        """
+
+        #they're  4 possible permutation hence, we will need to deal with all 
+        #four of them
+        if self.__rightCamFallen and self.__leftCamFallen:
+            #TODO: you will need to implement a function which will pick the better frame betwen the left and the right, for now, I am going to stick to right camera
+            rospy.loginfo("BOTH CAMERAS")
+            self.publishFallen(hasFallen)
+        elif self.__leftCamFallen and not self.__rightCamFallen:
+            rospy.loginfo("LEFT CAMERA")
+            self.publishFallen(hasFallen)
+        elif not self.__leftCamFallen and self.__rightCamFallen:
+            rospy.loginfo("RIGHT CAMERA")
+            self.publishFallen(hasFallen)
+        else:
+            rospy.loginfo("No cameras")
+            self.publishFallen(hasFallen)
+
+    def toggleCameraStatesON(self, camIndx):
+        """
+        ASSERTION: Will turn the leftCamFallen class field to true for an index
+        of 0, and it will turn the rightCamFallen class field to true for an
+        index of 1
+        """
+        if camIndx == miro.constants.CAM_L:
+            self.__leftCamFallen = True
+        #otherwise, it will be the right camera
+        else:
+            self.__rightCamFallen = True
+
+    def toggleCameraStatesOFF(self, camIndx):
+        """
+        ASSERTION: Will turn the leftCamFallen class field to false for an index
+        of 0, and it will turn the rightCamFallen class field to false for an
+        index of 1
+        """
+
+        if camIndx == miro.constants.CAM_L:
+            self.__leftCamFallen = False
+        #otherwise, it will be the right camera
+        else:
+            self.__rightCamFallen = False
+
     def getNoseCordinates(self, results, imgShape):
         """
         ASSERTION: MiRo will always know the location of the face of the
@@ -399,8 +461,6 @@ class PoseFallen():
 
         return coords
 
-
-
     def showBBox(self, results, img):
         """
         PURPOSE: To show the results for the bounding box algorithm from MiRo's 
@@ -410,6 +470,7 @@ class PoseFallen():
         inView = self.torsoInView(results)
         color = None
         text = ""
+        orientation = None
 
         if inView:
             text = "Person in view"
@@ -432,8 +493,7 @@ class PoseFallen():
         img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
                 2, cv2.LINE_AA)
 
-        return img
-
+        return img, orientation
 
     def showPose(self, results, img):
         """
@@ -508,7 +568,6 @@ class PoseFallen():
             MiRoError("Stereo Camera mode is not set")
 
         return inMode
-
 
 #the code of the main loop which is needed for this node
 if __name__ == "__main__": 

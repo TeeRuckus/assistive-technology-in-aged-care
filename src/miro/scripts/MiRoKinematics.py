@@ -70,11 +70,11 @@ class MiRoKinematics:
             print("x: ", self.__facePos[0])
             self.__kinHead.position[miro.constants.JOINT_YAW] = \
                 self.moveHead2XCoord(self.__facePos[0])
-            print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
 
             self.checkHeadWorkspaceYaw()
             self.checkHeadWorkSpaceLift()
             self.checkHeadWorkSpacePitch()
+            print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
             self.__pubKin.publish(self.__kinHead)
 
 
@@ -129,11 +129,23 @@ class MiRoKinematics:
         """
         ASSERTION:
         """
+        retValue = 0
+
+        """
+        if self.__facePos[0] > 200:
+            retValue =  math.radians((dx)*-0.1)
+        elif self.__facePos[0] < 100:
+            #retValue = math.radians((dx)*0.1)
+            retValue = math.radians(10.0)
+        """
+        retValue =  math.radians((dx)*-0.1)
+
         #the middle of 
-        retCoord = 0
+        """
         self.__startTime = time.time()
         self.__headMoving = True
-        return math.radians((dx)*-0.1)
+        """
+        return retValue
         #return math.radians((dx)*0.05)
 
 
@@ -210,7 +222,6 @@ class MiRoKinematics:
         ASSERTION: Will stop MiRo's head from past it's workspace in the yaw
         direction.
         """
-
         workspaceOkay = True
 
         if self.__kinHead.position[miro.constants.JOINT_YAW] >= miro.constants.YAW_RAD_MAX:
@@ -224,7 +235,8 @@ class MiRoKinematics:
 
         if self.__kinHead.position[miro.constants.JOINT_YAW] <= miro.constants.YAW_RAD_MIN:
             self.__kinHead.position[miro.constants.JOINT_YAW] = \
-            miro.constants.YAW_RAD_MIN + BUFFER_MAX
+                miro.constants.YAW_RAD_MIN + BUFFER_MAX
+
 
             workspaceOkay = False
             self.__headMoving = True
