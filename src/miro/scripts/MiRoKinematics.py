@@ -47,7 +47,6 @@ class MiRoKinematics:
         topic = topicBaseName + "/control/cmd_vel"
         self.__pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
 
-
     @property
     def verbose(self):
         return self.__verbose
@@ -63,8 +62,6 @@ class MiRoKinematics:
         """
         timeHeadDelay = 0
 
-        #TODO: Subscribe to the topic at the beginning of this function, so you'll have
-        #all the data which you will need to keep going
         while not rospy.core.is_shutdown():
             if self.__verbose:
                 rospy.loginfo_once("Moving head given subscribed coordinates")
@@ -130,6 +127,25 @@ class MiRoKinematics:
 
             time.sleep(0.02)
 
+    def respondFallen(self):
+        """
+        PURPOSE:
+        """
+
+        while not rospy.core.is_shutdown():
+            miroRobot.subHasFallen()
+            rospy.loginfo("RESPOND FALLEN")
+
+            if self.__fallenState:
+                #activating the wheels to drive forward
+                msgWheels = TwistStamped()
+                #this is the maximum forward speed of MiRo
+                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
+                msgWheels.twist.angular.z = 0.0
+                self.__pubWheels.publish(msgWheels)
+
+            time.sleep(1)
+
 
     def moveHead2XCoord(self, dx):
         """
@@ -154,7 +170,6 @@ class MiRoKinematics:
         return retValue
         #return math.radians((dx)*0.05)
 
-
     def moveHead2YCoord(self, dy):
         """
         ASSERTION:
@@ -163,8 +178,6 @@ class MiRoKinematics:
         self.__headMoving = True
         #THIS IS GOING TO BE WITH LIFT
         return math.radians((abs(dy)-20)*np.sign(dy)*0.3)
-
-
 
     def checkHeadWorkSpaceLift(self):
         """
@@ -251,7 +264,6 @@ class MiRoKinematics:
 
         return workspaceOkay
 
-
     def rotateBodyRight(self):
         """
         ASSERTION: Rotates Miro to the right 1 degree at a time
@@ -293,7 +305,6 @@ class MiRoKinematics:
         if self.__verbose:
             rospy.loginfo("Wagging MiRo's tail")
 
-
     #TODO: I honestly don't know what this function is actually going to do
     def wiggle(self, v, n, m):
         """
@@ -319,7 +330,7 @@ class MiRoKinematics:
         ASSERTION: Will subscribe to the topic resident/fallen/
         """
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
-        rospy.spin()
+        #rospy.spin()
 
     def callbackCoords(self, data):
         """
@@ -371,7 +382,8 @@ if __name__ == "__main__":
     #miroRobot.moveHeadCords()
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
-    miroRobot.subHasFallen()
+    #miroRobot.subHasFallen()
+    miroRobot.respondFallen()
 
     #disconnecting from robot
     RobotInterface.disconnect
