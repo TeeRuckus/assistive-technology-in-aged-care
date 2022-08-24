@@ -36,6 +36,7 @@ class MiRoKinematics:
         self.__startTime = 0.0
         #self.__kinHead.name = ["TILT", "LIFT", "YAW", "PITCH"]
         self.__facePos = (0,0)
+        self.__sensorInfo = None
 
         rospy.init_node(NODE_NAME, anonymous=True)
 
@@ -46,6 +47,13 @@ class MiRoKinematics:
 
         topic = topicBaseName + "/control/cmd_vel"
         self.__pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
+
+        #subscribing to sonar and cliff sensors of MiRo
+        self.sub_package = rospy.Subscriber(topicBaseName + "/sensors/package",
+            miro.msg.sensors_package, self.callBackSensorPackage, queue_size=1,
+            tcp_nodelay=True)
+        rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
+        rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
 
     @property
     def verbose(self):
@@ -66,7 +74,6 @@ class MiRoKinematics:
             if self.__verbose:
                 rospy.loginfo_once("Moving head given subscribed coordinates")
 
-            self.subCords()
             timeHeadDelay = time.time() - self.__startTime
 
 
@@ -133,9 +140,6 @@ class MiRoKinematics:
         """
 
         while not rospy.core.is_shutdown():
-            miroRobot.subHasFallen()
-            rospy.loginfo("RESPOND FALLEN")
-
             if self.__fallenState:
                 #activating the wheels to drive forward
                 msgWheels = TwistStamped()
@@ -144,7 +148,22 @@ class MiRoKinematics:
                 msgWheels.twist.angular.z = 0.0
                 self.__pubWheels.publish(msgWheels)
 
-            time.sleep(1)
+
+                #checking if the sonar sensor is close to something
+
+            #if they is some sensor information, we want to determine what to do
+            #TODO: you will need to indent this inside again, so it only happens once the robot has started moving
+            if not self.__sensorInfo is None:
+
+                currSensorInfo = self.__sensorInfo
+                #clearing sensor information not to clutter memory and 
+                #get convoluted readings
+                self.__sensorInfo = None
+                sonarReading = currSensorInfo.sonar.range
+
+                rospy.loginfo("Sonar reading: %s " % sonarReading)
+
+            time.sleep(0.02)
 
 
     def moveHead2XCoord(self, dx):
@@ -318,19 +337,7 @@ class MiRoKinematics:
             v = 2.0 - v
         return v
 
-    def subCords(self):
-        """
-        ASSERTION: Will subscribe to the topic resident/coords/
-        """
-        rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
         #stop node from being excited until node has being stopped
-
-    def subHasFallen(self):
-        """
-        ASSERTION: Will subscribe to the topic resident/fallen/
-        """
-        rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
-        #rospy.spin()
 
     def callbackCoords(self, data):
         """
@@ -358,7 +365,8 @@ class MiRoKinematics:
         if self.__verbose:
             rospy.loginfo("Resident hasn't fallen: %s " % data.data)
 
-        rospy.loginfo("fallen state %s " % self.__fallenState)
+    def callBackSensorPackage(self, msg):
+        self.__sensorInfo = msg
 
     def callbackKin(self, msg):
         """
@@ -366,14 +374,11 @@ class MiRoKinematics:
         #TODO: you'll need to have some protection, so that if it's not called it will do nothing
         self.__kinHead = msg.position
 
-
     def __validateVerbose(self, inVerbose):
         if type(inVerbose) is not(bool):
             MiRoError("Verbose muse be a boolean either true or false")
 
         return inVerbose
-
-
 
 if __name__ == "__main__":
     rospy.loginfo_once("Starting MiRo Kinematics node ...")
@@ -384,7 +389,6 @@ if __name__ == "__main__":
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
     miroRobot.respondFallen()
-
     #disconnecting from robot
     RobotInterface.disconnect
 
