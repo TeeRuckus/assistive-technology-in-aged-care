@@ -37,6 +37,7 @@ class MiRoKinematics:
         #self.__kinHead.name = ["TILT", "LIFT", "YAW", "PITCH"]
         self.__facePos = (0,0)
         self.__sensorInfo = None
+        self.__miroStopped = False
 
         rospy.init_node(NODE_NAME, anonymous=True)
 
@@ -140,7 +141,7 @@ class MiRoKinematics:
         """
 
         while not rospy.core.is_shutdown():
-            if self.__fallenState:
+            if self.__fallenState and not self.__miroStopped:
                 #activating the wheels to drive forward
                 msgWheels = TwistStamped()
                 #this is the maximum forward speed of MiRo
@@ -152,16 +153,21 @@ class MiRoKinematics:
                 #checking if the sonar sensor is close to something
 
             #if they is some sensor information, we want to determine what to do
-            #TODO: you will need to indent this inside again, so it only happens once the robot has started moving
-            if not self.__sensorInfo is None:
+                if not self.__sensorInfo is None:
 
-                currSensorInfo = self.__sensorInfo
-                #clearing sensor information not to clutter memory and 
-                #get convoluted readings
-                self.__sensorInfo = None
-                sonarReading = currSensorInfo.sonar.range
+                    currSensorInfo = self.__sensorInfo
+                    #clearing sensor information not to clutter memory and 
+                    #get convoluted readings
+                    self.__sensorInfo = None
+                    sonarReading = currSensorInfo.sonar.range
 
-                rospy.loginfo("Sonar reading: %s " % sonarReading)
+                    if sonarReading <= 0.4:
+                        self.__miroStopped = True
+                        rospy.loginfo("STOP NIGGA")
+
+            #if miro has stopped and the person has fallen, want to approach person
+            if self.__fallenState and self.__miroStopped:
+                pass
 
             time.sleep(0.02)
 
