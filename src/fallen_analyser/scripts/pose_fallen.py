@@ -73,6 +73,9 @@ class PoseFallen():
 
         self.__coordsPub = rospy.Publisher("resident/coords/",
                 coords, queue_size=10)
+        #TODO: play with the queue size and see if you will get  better performance
+        self.__fallenPublisher = rospy.Publisher("resident/fallen/", Bool,
+                queue_size=0)
 
     @property
     def imageStitcher(self):
@@ -250,14 +253,19 @@ class PoseFallen():
         #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
         hasFallen = False
 
+        fallenStatus = Bool()
         rospy.loginfo("The current count: %s" % self.__fallenCounter)
         if fallenTrigger:
             self.__fallenCounter += 1
             if self.__fallenCounter >= FALLEN_COUNT_THRESHOLD:
                 rospy.loginfo("THE PERSON HAS DEFINITELY FALLEN AND I SHOULD DO SOMETHING ABOUT IT")
+                fallenStatus.data = True
+                self.__fallenPublisher.publish(fallenStatus)
 
         #only reset if both cameras don't have a fallen resident in their frame
         if not(self.__leftCamFallen) and not(self.__rightCamFallen):
+            fallenStatus.data = False
+            self.__fallenPublisher.publish(fallenStatus)
             self.__fallenCounter = 0
 
 
