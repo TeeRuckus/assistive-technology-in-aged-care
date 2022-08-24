@@ -7,7 +7,8 @@ import time
 
 
 from fallen_analyser.msg import coords
-from std_msgs.msg import UInt8, UInt16, UInt32, Float32MultiArray, UInt16MultiArray, UInt32MultiArray
+from std_msgs.msg import Float32MultiArray, UInt16MultiArray, UInt32MultiArray
+from std_msgs.msg import UInt8, UInt16, UInt32, Bool
 from geometry_msgs.msg import Twist, TwistStamped
 from sensor_msgs.msg import JointState, Imu
 from Errors import *
@@ -27,6 +28,9 @@ class MiRoKinematics:
     def __init__(self):
         self.__verbose = False
         self.__headMoving = False
+        #if resident has already fallen, ignore messages from resident/fallen/
+        #topic, and initiate the MiRo fallen interaction
+        self.__fallenState = False
         self.__kinHead = JointState()
         self.__kinHead.position = [0.0, math.radians(34.0), 0.0, 0.0]
         self.__startTime = 0.0
@@ -59,6 +63,8 @@ class MiRoKinematics:
         """
         timeHeadDelay = 0
 
+        #TODO: Subscribe to the topic at the beginning of this function, so you'll have
+        #all the data which you will need to keep going
         while not rospy.core.is_shutdown():
             if self.__verbose:
                 rospy.loginfo_once("Moving head given subscribed coordinates")
@@ -301,9 +307,24 @@ class MiRoKinematics:
             v = 2.0 - v
         return v
 
+    def subCords(self):
+        """
+        ASSERTION: Will subscribe to the topic resident/coords/
+        """
+        rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
+        #stop node from being excited until node has being stopped
+
+    def subHasFallen(self):
+        """
+        ASSERTION: Will subscribe to the topic resident/fallen/
+        """
+        rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
+        rospy.spin()
+
     def callbackCoords(self, data):
         """
-        ASSERTION:
+        ASSERTION: This will unpack subscribed data from resident/coords/ topic and
+        assign data to the facePos class field
         """
         #add another point to the path of residents head
         self.__facePos = (int(data.xCord.data), int(data.yCord.data))
@@ -312,6 +333,21 @@ class MiRoKinematics:
             rospy.loginfo("received Coordinates: (%.3f, %.3f)" %
                     (data.xCord.data, data.yCord.data))
 
+    def callBackHasFallen(self, data):
+        """
+        ASSERTION: This function will unpack subscribed data from resident/fallen/
+        topic and assign the fallenState class field to True
+        """
+
+        #if the fallen state has already being activated and hasn't be cleared,
+        #we don't want to accept any new incoming data
+        if not self.__fallenState:
+            self.__fallenState = bool(data.data)
+
+        if self.__verbose:
+            rospy.loginfo("Resident hasn't fallen: %s " % data.data)
+
+        rospy.loginfo("fallen state %s " % self.__fallenState)
 
     def callbackKin(self, msg):
         """
@@ -319,14 +355,6 @@ class MiRoKinematics:
         #TODO: you'll need to have some protection, so that if it's not called it will do nothing
         self.__kinHead = msg.position
 
-
-    def subCords(self):
-        """
-        ASSERTION: Will get coordinate data from fallen_analyser node, and
-        MiRo will rotate head to location if in work spac
-        """
-        rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
-        #stop node from being excited until node has being stopped
 
     def __validateVerbose(self, inVerbose):
         if type(inVerbose) is not(bool):
@@ -337,11 +365,13 @@ class MiRoKinematics:
 
 
 if __name__ == "__main__":
+    rospy.loginfo_once("Starting MiRo Kinematics node ...")
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
-    miroRobot.moveHeadCords()
+    #miroRobot.moveHeadCords()
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
+    miroRobot.subHasFallen()
 
     #disconnecting from robot
     RobotInterface.disconnect

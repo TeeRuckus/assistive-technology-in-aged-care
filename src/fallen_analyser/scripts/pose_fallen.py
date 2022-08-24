@@ -315,6 +315,7 @@ class PoseFallen():
         outCount = [0] * len(outFile)
         t0 = time.time()
         camNames = ['left', 'right', 'stitched']
+        #TODO: you will need to do the fallen analyser as well for the pose function, so you can have results for both
 
 
         #main loop for getting data from the stereo cameras of MiRo
@@ -579,7 +580,7 @@ class PoseFallen():
 
 #the code of the main loop which is needed for this node
 if __name__ == "__main__": 
-    rospy.loginfo("Started pose fallen node")
+    rospy.loginfo_once("Started pose fallen node ...")
 
     #starting the  video feed and analysing if person has fallen in frames
     main = PoseFallen(sys.argv[1:])
