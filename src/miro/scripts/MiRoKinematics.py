@@ -56,6 +56,9 @@ class MiRoKinematics:
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
 
+        self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
+                UInt32MultiArray, queue_size=0)
+
     @property
     def verbose(self):
         return self.__verbose
@@ -167,10 +170,10 @@ class MiRoKinematics:
 
             #if miro has stopped and the person has fallen, want to approach person
             if self.__fallenState and self.__miroStopped:
+                #you want to turn on the LED lights to a particular color
                 pass
 
             time.sleep(0.02)
-
 
     def moveHead2XCoord(self, dx):
         """
@@ -194,6 +197,97 @@ class MiRoKinematics:
         """
         return retValue
         #return math.radians((dx)*0.05)
+
+    def rotateBodyRight(self):
+        """
+        ASSERTION: Rotates Miro to the right 1 degree at a time
+        """
+
+        if self.__verbose:
+            rospy.loginfo("rotating Miro's body right")
+
+        msgWheels = TwistStamped()
+        msgWheels.twist.angular.z = 1.0
+        self.__pubWheels.publish(msgWheels)
+        #giving time for the command to fully execute
+        time.sleep(0.01)
+
+        return 1
+
+    def rotateBodyLeft(self):
+        """
+        ASSERTION: Rotates Miro to the left 1 degree at a time
+        """
+
+        if self.__verbose:
+            rospy.loginfo("rotating MiRo's body left")
+
+        msgWheels = TwistStamped()
+        msgWheels.twist.angular.z = -1.0
+        self.__pubWheels.publish(msgWheels)
+
+        time.sleep(0.01)
+
+        return 1
+
+    def wagTail(self):
+        """
+        ASSERTION: Wags MiRo's tail for a set time to communicate happiness.
+        """
+        #TODO: come back and finish this  off
+
+        if self.__verbose:
+            rospy.loginfo("Wagging MiRo's tail")
+
+    def turnLEDOn(self, rgb, bright):
+        """
+        PURPOSE
+        """
+
+        frontLeft, midLeft, rearLeft, frontRight, midRight, rearRight = range(6)
+        msgIllum = UInt32MultiArray()
+        msgIllum.data = [0, 0, 0, 0, 0, 0]
+
+        value = self.__generateIllum(rgb, bright)
+
+        #turning front section of lights on
+        msgIllum.data[frontLeft] = value
+        msgIllum.data[frontRight] = value
+
+        #turning midsection of lights on
+        msgIllum.data[midLeft] = value
+        msgIllum.data[midRight] = value
+
+        #turning rear section of lights on
+        msgIllum.data[rearLeft] = value
+        msgIllum.data[rearRight] = value
+
+        self.pubIllum.publish(msgIllum)
+
+
+    def turnLEDOff(self):
+        """
+        ASSERTION: Turns all sections of MiRO
+        """
+        msgIllum = UInt32MultiArray()
+        msgIllum.data = [0, 0, 0, 0, 0, 0]
+        msgIllum
+        self.pubIllum.publish(msgIllum)
+
+    #TODO: I honestly don't know what this function is actually going to do
+    def wiggle(self, v, n, m):
+        """
+        ASSERTION: Wiggles MiRo's tail within the tail's work space
+        """
+        #TODO: come back and finish this  off
+        v = v + float(n) / float(m)
+        if v > 2.0:
+            v -= 2.0
+        elif v > 1.0:
+            v = 2.0 - v
+        return v
+
+        #stop node from being excited until node has being stopped
 
     def moveHead2YCoord(self, dy):
         """
@@ -289,62 +383,6 @@ class MiRoKinematics:
 
         return workspaceOkay
 
-    def rotateBodyRight(self):
-        """
-        ASSERTION: Rotates Miro to the right 1 degree at a time
-        """
-
-        if self.__verbose:
-            rospy.loginfo("rotating Miro's body right")
-
-        msgWheels = TwistStamped()
-        msgWheels.twist.angular.z = 1.0
-        self.__pubWheels.publish(msgWheels)
-        #giving time for the command to fully execute
-        time.sleep(0.01)
-
-        return 1
-
-    def rotateBodyLeft(self):
-        """
-        ASSERTION: Rotates Miro to the left 1 degree at a time
-        """
-
-        if self.__verbose:
-            rospy.loginfo("rotating MiRo's body left")
-
-        msgWheels = TwistStamped()
-        msgWheels.twist.angular.z = -1.0
-        self.__pubWheels.publish(msgWheels)
-
-        time.sleep(0.01)
-
-        return 1
-
-    def wagTail(self):
-        """
-        ASSERTION: Wags MiRo's tail for a set time to communicate happiness.
-        """
-        #TODO: come back and finish this  off
-
-        if self.__verbose:
-            rospy.loginfo("Wagging MiRo's tail")
-
-    #TODO: I honestly don't know what this function is actually going to do
-    def wiggle(self, v, n, m):
-        """
-        ASSERTION: Wiggles MiRo's tail within the tail's work space
-        """
-        #TODO: come back and finish this  off
-        v = v + float(n) / float(m)
-        if v > 2.0:
-            v -= 2.0
-        elif v > 1.0:
-            v = 2.0 - v
-        return v
-
-        #stop node from being excited until node has being stopped
-
     def callbackCoords(self, data):
         """
         ASSERTION: This will unpack subscribed data from resident/coords/ topic and
@@ -386,6 +424,16 @@ class MiRoKinematics:
 
         return inVerbose
 
+    def __generateIllum(self, rgb, bright):
+        """
+        ASSERTION: Generates MiRo specific code to produce color given rgb import
+        with specified brightness by the bright import.
+        """
+        red = rgb[0]
+        green = rgb[1]
+        blue = rgb[2]
+        return (int(bright) << 24) | (red << 16) | (green << 8) | blue
+
 if __name__ == "__main__":
     rospy.loginfo_once("Starting MiRo Kinematics node ...")
     miroRobot = MiRoKinematics()
@@ -394,7 +442,12 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    miroRobot.respondFallen()
+    #TODO:come back and uncomment this, and do the functionality which you're testing here
+    #miroRobot.respondFallen()
+    while not rospy.core.is_shutdown():
+        miroRobot.turnLEDOn(np.array([255, 0, 0]), 255)
+        time.sleep(0.02)
+
     #disconnecting from robot
     RobotInterface.disconnect
 
