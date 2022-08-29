@@ -36,8 +36,10 @@ class MiRoKinematics:
         self.__startTime = 0.0
         #self.__kinHead.name = ["TILT", "LIFT", "YAW", "PITCH"]
         self.__facePos = (0,0)
+        self.__ledTimer = 0
         self.__sensorInfo = None
         self.__miroStopped = False
+        self.__LEDToggle = True
 
         rospy.init_node(NODE_NAME, anonymous=True)
 
@@ -58,6 +60,9 @@ class MiRoKinematics:
 
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
                 UInt32MultiArray, queue_size=0)
+
+
+        #TODO: you will add some code here to make sure that the LED lights are switched off
 
     @property
     def verbose(self):
@@ -143,18 +148,21 @@ class MiRoKinematics:
         PURPOSE:
         """
 
+        sleepTime = 0.02
+        frequency = 1 / 0.02
+
+        time.sleep(0.02)
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
+                rospy.loginfo_once("Getting to fallen resident...")
                 #activating the wheels to drive forward
                 msgWheels = TwistStamped()
                 #this is the maximum forward speed of MiRo
-                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
+                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S*0.5
                 msgWheels.twist.angular.z = 0.0
                 self.__pubWheels.publish(msgWheels)
 
-
                 #checking if the sonar sensor is close to something
-
             #if they is some sensor information, we want to determine what to do
                 if not self.__sensorInfo is None:
 
@@ -164,16 +172,19 @@ class MiRoKinematics:
                     self.__sensorInfo = None
                     sonarReading = currSensorInfo.sonar.range
 
-                    if sonarReading <= 0.4:
+                    #if sonarReading <= 0.4:
+                    if sonarReading <= 0.3:
                         self.__miroStopped = True
                         rospy.loginfo("STOP NIGGA")
 
             #if miro has stopped and the person has fallen, want to approach person
             if self.__fallenState and self.__miroStopped:
                 #you want to turn on the LED lights to a particular color
-                pass
+                rospy.loginfo_once("Social Interaction MiRO")
+                red = np.array([255, 0, 0])
+                self.activateSOSLED(sleepTime, frequency, red, 255)
 
-            time.sleep(0.02)
+            time.sleep(sleepTime)
 
     def moveHead2XCoord(self, dx):
         """
@@ -264,6 +275,20 @@ class MiRoKinematics:
 
         self.pubIllum.publish(msgIllum)
 
+    def activateSOSLED(self, sleep, frequency, color, bright):
+        """
+        ASSERTION: MiRO will continuously turn on the LED on and off with
+        intervals of 1 second given the specified color and brightness
+        """
+        self.__ledTimer += 1
+
+
+        if ((self.__ledTimer % frequency) == 0) and self.__LEDToggle:
+            self.turnLEDOn(np.array([255,0,0]), 255)
+            self.__LEDToggle = False
+        else:
+            self.turnLEDOff()
+            self.__LEDToggle = True
 
     def turnLEDOff(self):
         """
@@ -271,7 +296,6 @@ class MiRoKinematics:
         """
         msgIllum = UInt32MultiArray()
         msgIllum.data = [0, 0, 0, 0, 0, 0]
-        msgIllum
         self.pubIllum.publish(msgIllum)
 
     #TODO: I honestly don't know what this function is actually going to do
@@ -442,11 +466,28 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    #TODO:come back and uncomment this, and do the functionality which you're testing here
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
+
+    #testing if I can control the wheels from here or not 
+
+    """
+    topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
+    topic = topicBaseName + "/control/cmd_vel"
+    pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
     while not rospy.core.is_shutdown():
-        miroRobot.turnLEDOn(np.array([255, 0, 0]), 255)
+        miroRobot.turnLEDOff()
+
+        rospy.loginfo_once("Getting to fallen resident...")
+        #activating the wheels to drive forward
+        msgWheels = TwistStamped()
+        #this is the maximum forward speed of MiRo
+        #50% of the maximum speed of MiRO
+        msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S * 0.5
+        msgWheels.twist.angular.z = 0.0
+        pubWheels.publish(msgWheels)
+
         time.sleep(0.02)
+    """
 
     #disconnecting from robot
     RobotInterface.disconnect
