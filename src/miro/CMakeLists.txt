@@ -111,9 +111,9 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-catkin_install_python(PROGRAMS scripts/MiRoVideo.py
-    scripts/Errors.py
+catkin_install_python(PROGRAMS scripts/Errors.py
     scripts/MiRoKinematics.py
+    scripts/MiRoVoice.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 

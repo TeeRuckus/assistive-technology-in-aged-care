@@ -23,6 +23,7 @@ NODE_NAME = "pose_fallen"
 FALLEN_COUNT_THRESHOLD = 6
 
 #TODO: You'll need to test if the conversation with constants have worked here
+#TODO: You'll need to do the counts of the falls for the pose algorithm as well
 
 class PoseFallen():
     def __init__(self,args, dectConf=0.1, trackConf=0.1):
@@ -252,10 +253,12 @@ class PoseFallen():
         """
         #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
 
-        #TODO: DON'T FORGET TO REMOVE THIS, I AM ONLY USING FOR MOCKING AND TESTING
+        """
+        #to force a fall on this controller
         fallenTrigger = True
         self.__leftCamFallen = True
         self.__rightCamFallen = True
+        """
 
         fallenStatus = Bool()
         rospy.loginfo("The current count: %s" % self.__fallenCounter)
