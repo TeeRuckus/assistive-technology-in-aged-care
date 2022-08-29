@@ -40,7 +40,6 @@ class MiRoKinematics:
         self.__sensorInfo = None
         self.__miroStopped = False
         self.__LEDToggle = True
-
         rospy.init_node(NODE_NAME, anonymous=True)
 
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
@@ -52,9 +51,10 @@ class MiRoKinematics:
         self.__pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
 
         #subscribing to sonar and cliff sensors of MiRo
-        self.sub_package = rospy.Subscriber(topicBaseName + "/sensors/package",
+        self.sensorPackage = rospy.Subscriber(topicBaseName + "/sensors/package",
             miro.msg.sensors_package, self.callBackSensorPackage, queue_size=1,
             tcp_nodelay=True)
+
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
 
@@ -150,6 +150,9 @@ class MiRoKinematics:
 
         sleepTime = 0.02
         frequency = 1 / 0.02
+        helpTimerStart = 0.0
+        elapsedTime = 0.0
+        residentOkay = False
 
         time.sleep(0.02)
         while not rospy.core.is_shutdown():
@@ -176,13 +179,30 @@ class MiRoKinematics:
                     if sonarReading <= 0.3:
                         self.__miroStopped = True
                         rospy.loginfo("STOP NIGGA")
+                        helpTimerStart = time.time()
+
+                        #starting the timer
 
             #if miro has stopped and the person has fallen, want to approach person
             if self.__fallenState and self.__miroStopped:
                 #you want to turn on the LED lights to a particular color
                 rospy.loginfo_once("Social Interaction MiRO")
-                red = np.array([255, 0, 0])
-                self.activateSOSLED(sleepTime, frequency, red, 255)
+
+                #checking if the resident is okay
+                residentOkay = self.residentOkayHaptic()
+
+
+                elapsedHelpTime = time.time() - helpTimerStart
+                #waiting for 10 seconds
+                if elapsedHelpTime >= 5 and not(residentOkay):
+                    rospy.loginfo_once("The resident is NOT okay please help ...")
+                    red = np.array([255, 0, 0])
+                    self.activateSOSLED(sleepTime, frequency, red, 255)
+
+                if residentOkay:
+                    rospy.loginfo_once("Resident is okay")
+                    #miro will spin around in circles trying to get nurses attention
+                    pass
 
             time.sleep(sleepTime)
 
@@ -249,6 +269,28 @@ class MiRoKinematics:
 
         if self.__verbose:
             rospy.loginfo("Wagging MiRo's tail")
+
+    def residentOkayHaptic(self):
+        """
+        """
+
+        touched = False
+        if not self.__sensorInfo is None:
+            headSensor =  self.__sensorInfo.touch_head.data
+            #accounting for the sensors which are already pressed
+            bodySensor = self.__sensorInfo.touch_body.data - 14208
+
+            if self.__verbose:
+                rospy.loginfo("headSensor: %s bodySensor: %s " % (headSensor, 
+                    bodySensor))
+
+
+            if (headSensor > 0) | (bodySensor > 0):
+                touched = True
+                rospy.loginfo("you touched my head mother fucker")
+
+        return touched
+        #grabbing the head sensor data
 
     def turnLEDOn(self, rgb, bright):
         """
@@ -466,28 +508,13 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    miroRobot.respondFallen()
+    #miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
-    """
-    topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
-    topic = topicBaseName + "/control/cmd_vel"
-    pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
     while not rospy.core.is_shutdown():
-        miroRobot.turnLEDOff()
-
-        rospy.loginfo_once("Getting to fallen resident...")
-        #activating the wheels to drive forward
-        msgWheels = TwistStamped()
-        #this is the maximum forward speed of MiRo
-        #50% of the maximum speed of MiRO
-        msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S * 0.5
-        msgWheels.twist.angular.z = 0.0
-        pubWheels.publish(msgWheels)
-
+        miroRobot.residentOkayHaptic()
         time.sleep(0.02)
-    """
 
     #disconnecting from robot
     RobotInterface.disconnect
