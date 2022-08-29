@@ -4,6 +4,7 @@ import os
 import numpy as np
 import math
 import time
+import sys
 
 
 from fallen_analyser.msg import coords
@@ -17,6 +18,8 @@ from  miro2.lib.RobotInterface import RobotInterface
 
 NODE_NAME = "MiRoKinematics"
 BUFFER_MAX = 5
+#TODO: you will need to make your own sound directories which will have your own sounds
+HELP_SIGNAL = ""
 
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
@@ -161,7 +164,7 @@ class MiRoKinematics:
                 #activating the wheels to drive forward
                 msgWheels = TwistStamped()
                 #this is the maximum forward speed of MiRo
-                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S*0.5
+                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
                 msgWheels.twist.angular.z = 0.0
                 self.__pubWheels.publish(msgWheels)
 
@@ -201,14 +204,18 @@ class MiRoKinematics:
                     rospy.loginfo_once("The resident is NOT okay please help ...")
                     red = np.array([255, 0, 0])
                     self.activateSOSLED(sleepTime, frequency, red, 255)
+                    self.getAttention()
 
                 if self.__residentOkay:
                     #re-setting the timers, and variables used 
                     elapsedTime = 0.0
                     helpTimerStart = 0.0
-                    rospy.loginfo_once("Resident is okay")
-                    #miro will spin around in circles trying to get nurses attention
-                    pass
+                    rospy.loginfo_once("Resident is okay now")
+
+                    if (self.residentOkayHaptic()):
+                        rospy.loginfo("I am switching off now :)")
+                        sys.exit()
+
 
             time.sleep(sleepTime)
 
@@ -273,8 +280,7 @@ class MiRoKinematics:
         """
 
         #setting it to spin in clockwise direction
-        spin = 1.0
-        rospy.loginfo_once("Someone please come and help ...")
+        spin = -1.0
         msgWheels = TwistStamped()
         #msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S*0.5
         msgWheels.twist.linear.x = 0.0
@@ -299,6 +305,7 @@ class MiRoKinematics:
         ASSERTION: Will return true if the body of Miro is touched
         """
 
+        touched = False
         if not self.__sensorInfo is None:
             headSensor =  self.__sensorInfo.touch_head.data
             #accounting for the sensors which are already pressed
@@ -310,7 +317,10 @@ class MiRoKinematics:
 
             if (headSensor > 0) | (bodySensor > 0):
                 self.__residentOkay = True
+                touched = True
                 rospy.loginfo("You touched me ...")
+
+        return touched
 
         #grabbing the head sensor data
 
@@ -530,14 +540,16 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
+    """
     while not rospy.core.is_shutdown():
         #miroRobot.residentOkayHaptic()
         miroRobot.getAttention()
         time.sleep(0.02)
+    """
 
     #disconnecting from robot
     RobotInterface.disconnect
