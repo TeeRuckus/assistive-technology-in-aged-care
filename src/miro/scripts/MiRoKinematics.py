@@ -267,6 +267,24 @@ class MiRoKinematics:
 
         return 1
 
+    def getAttention(self):
+        """
+        PURPOSE:
+        """
+
+        #setting it to spin in clockwise direction
+        spin = 1.0
+        rospy.loginfo_once("Someone please come and help ...")
+        msgWheels = TwistStamped()
+        #msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S*0.5
+        msgWheels.twist.linear.x = 0.0
+        #TODO: you can add timers on this variable to make it rotate for a period of time
+        v = 1.0
+        msgWheels.twist.angular.z = v * 6.2832 * spin
+        self.__pubWheels.publish(msgWheels)
+
+
+
     def wagTail(self):
         """
         ASSERTION: Wags MiRo's tail for a set time to communicate happiness.
@@ -512,15 +530,14 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    miroRobot.respondFallen()
+    #miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
-    """
     while not rospy.core.is_shutdown():
-        miroRobot.residentOkayHaptic()
+        #miroRobot.residentOkayHaptic()
+        miroRobot.getAttention()
         time.sleep(0.02)
-    """
 
     #disconnecting from robot
     RobotInterface.disconnect
