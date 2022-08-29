@@ -251,7 +251,11 @@ class PoseFallen():
         previous frames of the algorithm
         """
         #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
-        hasFallen = False
+
+        #TODO: DON'T FORGET TO REMOVE THIS, I AM ONLY USING FOR MOCKING AND TESTING
+        fallenTrigger = True
+        self.__leftCamFallen = True
+        self.__rightCamFallen = True
 
         fallenStatus = Bool()
         rospy.loginfo("The current count: %s" % self.__fallenCounter)
@@ -269,12 +273,6 @@ class PoseFallen():
             self.__fallenCounter = 0
 
 
-        """
-        #TODO: you will need to change the name to something more informative
-        pub = rospy.Publisher(NODE_NAME, Bool,queue_size=10)
-
-        pub.publish(hasFallen)
-        """
 
     def callbackCam(self, rosImg, indx):
         """
@@ -409,7 +407,6 @@ class PoseFallen():
         default to also choose the one which has more of the person in its
         current frame of view
         """
-
         #they're  4 possible permutation hence, we will need to deal with all 
         #four of them
         if self.__rightCamFallen and self.__leftCamFallen:

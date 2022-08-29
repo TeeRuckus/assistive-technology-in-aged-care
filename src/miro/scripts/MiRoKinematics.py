@@ -40,6 +40,7 @@ class MiRoKinematics:
         self.__sensorInfo = None
         self.__miroStopped = False
         self.__LEDToggle = True
+        self.__residentOkay = False
         rospy.init_node(NODE_NAME, anonymous=True)
 
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
@@ -152,7 +153,6 @@ class MiRoKinematics:
         frequency = 1 / 0.02
         helpTimerStart = 0.0
         elapsedTime = 0.0
-        residentOkay = False
 
         time.sleep(0.02)
         while not rospy.core.is_shutdown():
@@ -189,17 +189,23 @@ class MiRoKinematics:
                 rospy.loginfo_once("Social Interaction MiRO")
 
                 #checking if the resident is okay
-                residentOkay = self.residentOkayHaptic()
+                self.residentOkayHaptic()
 
 
-                elapsedHelpTime = time.time() - helpTimerStart
+                #only count the time if the resident is not okay
+                if not(self.__residentOkay):
+                    elapsedHelpTime = time.time() - helpTimerStart
+
                 #waiting for 10 seconds
-                if elapsedHelpTime >= 5 and not(residentOkay):
+                if elapsedHelpTime >= 10 and not(self.__residentOkay):
                     rospy.loginfo_once("The resident is NOT okay please help ...")
                     red = np.array([255, 0, 0])
                     self.activateSOSLED(sleepTime, frequency, red, 255)
 
-                if residentOkay:
+                if self.__residentOkay:
+                    #re-setting the timers, and variables used 
+                    elapsedTime = 0.0
+                    helpTimerStart = 0.0
                     rospy.loginfo_once("Resident is okay")
                     #miro will spin around in circles trying to get nurses attention
                     pass
@@ -272,9 +278,9 @@ class MiRoKinematics:
 
     def residentOkayHaptic(self):
         """
+        ASSERTION: Will return true if the body of Miro is touched
         """
 
-        touched = False
         if not self.__sensorInfo is None:
             headSensor =  self.__sensorInfo.touch_head.data
             #accounting for the sensors which are already pressed
@@ -284,12 +290,10 @@ class MiRoKinematics:
                 rospy.loginfo("headSensor: %s bodySensor: %s " % (headSensor, 
                     bodySensor))
 
-
             if (headSensor > 0) | (bodySensor > 0):
-                touched = True
-                rospy.loginfo("you touched my head mother fucker")
+                self.__residentOkay = True
+                rospy.loginfo("You touched me ...")
 
-        return touched
         #grabbing the head sensor data
 
     def turnLEDOn(self, rgb, bright):
@@ -508,13 +512,15 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
+    """
     while not rospy.core.is_shutdown():
         miroRobot.residentOkayHaptic()
         time.sleep(0.02)
+    """
 
     #disconnecting from robot
     RobotInterface.disconnect
