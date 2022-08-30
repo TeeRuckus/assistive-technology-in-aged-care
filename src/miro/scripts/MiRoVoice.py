@@ -203,6 +203,7 @@ class Streamer():
 
 if __name__ == "__main__":
     soundInterface = Streamer()
+    soundInterface.playWarningSignal = True
     soundInterface.playSound()
 
 
