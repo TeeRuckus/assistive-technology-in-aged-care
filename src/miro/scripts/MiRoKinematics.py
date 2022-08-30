@@ -48,12 +48,7 @@ class MiRoKinematics:
 
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
 
-        topic = topicBaseName + "/control/kinematic_joints"
-        self.__pubKin = rospy.Publisher(topic, JointState, queue_size=0)
-
-        topic = topicBaseName + "/control/cmd_vel"
-        self.__pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
-
+        #SUBSCRIBERS
         #subscribing to sonar and cliff sensors of MiRo
         self.sensorPackage = rospy.Subscriber(topicBaseName + "/sensors/package",
             miro.msg.sensors_package, self.callBackSensorPackage, queue_size=1,
@@ -62,8 +57,19 @@ class MiRoKinematics:
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
 
+        #PUBLISHERS
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
                 UInt32MultiArray, queue_size=0)
+
+        topic = topicBaseName + "/control/kinematic_joints"
+        self.__pubKin = rospy.Publisher(topic, JointState, queue_size=0)
+
+        topic = topicBaseName + "/control/cmd_vel"
+        self.__pubWheels = rospy.Publisher(topic, TwistStamped, queue_size=0)
+
+        self.__pubWarningSignal = rospy.Publisher("resident/warningSignal/",
+                Bool, queue_size=0)
+
 
 
         #TODO: you will add some code here to make sure that the LED lights are switched off
@@ -199,18 +205,24 @@ class MiRoKinematics:
                 if not(self.__residentOkay):
                     elapsedHelpTime = time.time() - helpTimerStart
 
+                warningSignal = Bool()
                 #waiting for 10 seconds
                 if elapsedHelpTime >= 10 and not(self.__residentOkay):
                     rospy.loginfo_once("The resident is NOT okay please help ...")
                     red = np.array([255, 0, 0])
                     self.activateSOSLED(sleepTime, frequency, red, 255)
                     self.getAttention()
+                    warningSignal.data = True
+                    self.__pubWarningSignal.publish(warningSignal)
 
                 if self.__residentOkay:
                     #re-setting the timers, and variables used 
                     elapsedTime = 0.0
                     helpTimerStart = 0.0
                     rospy.loginfo_once("Resident is okay now")
+                    warningSignal.data = False
+                    self.__pubWarningSignal.publish(warningSignal)
+                    self.turnLEDOff()
 
                     if (self.residentOkayHaptic()):
                         rospy.loginfo("I am switching off now :)")
@@ -288,8 +300,6 @@ class MiRoKinematics:
         v = 1.0
         msgWheels.twist.angular.z = v * 6.2832 * spin
         self.__pubWheels.publish(msgWheels)
-
-
 
     def wagTail(self):
         """

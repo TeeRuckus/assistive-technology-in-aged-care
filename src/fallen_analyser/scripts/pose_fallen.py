@@ -253,12 +253,10 @@ class PoseFallen():
         """
         #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
 
-        """
         #to force a fall on this controller
         fallenTrigger = True
         self.__leftCamFallen = True
         self.__rightCamFallen = True
-        """
 
         fallenStatus = Bool()
         rospy.loginfo("The current count: %s" % self.__fallenCounter)
