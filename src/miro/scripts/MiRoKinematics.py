@@ -164,6 +164,7 @@ class MiRoKinematics:
         elapsedTime = 0.0
 
         time.sleep(0.02)
+
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
                 rospy.loginfo_once("Getting to fallen resident...")
@@ -526,6 +527,11 @@ class MiRoKinematics:
         #TODO: you'll need to have some protection, so that if it's not called it will do nothing
         self.__kinHead = msg.position
 
+    #TODO: come back and expand on this idea and see what can come out of it
+    def cleanUp(self):
+        self.turnLEDOff()
+        print("you have shut me down mate")
+
     def __validateVerbose(self, inVerbose):
         if type(inVerbose) is not(bool):
             MiRoError("Verbose muse be a boolean either true or false")
@@ -561,6 +567,7 @@ if __name__ == "__main__":
         time.sleep(0.02)
 
     #disconnecting from robot
+    rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
 
 

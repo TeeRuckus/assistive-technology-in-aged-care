@@ -1,0 +1,19 @@
+<launch>
+    <node
+        pkg="miro"
+        type="MiRoKinematics.py"
+        name="MiRokinematics"
+        required="true"
+        output="screen"
+    />
+
+    <node
+        pkg="miro"
+        type="MiRoVoice.py"
+        name="MiROVoice"
+        respawn="true"
+        launch-prefix="xterm -e"
+    />
+
+
+</launch>

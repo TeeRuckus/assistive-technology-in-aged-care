@@ -1,0 +1,12 @@
+<launch>
+    <arg name="inModeF" default=""/>
+    <arg name="inAlgoF" default=""/>
+
+    <include file="$(find miro)/launch/miro.launch" />
+
+    <include file="$(find fallen_analyser)/launch/fallen_analyser.launch">
+        <arg name="inMode" value="$(arg inModeF)"/>
+
+        <arg name="inAlgo" value="$(arg inAlgoF)"/>
+    </include>
+</launch>

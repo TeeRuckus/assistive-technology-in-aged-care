@@ -1,0 +1,17 @@
+<launch>
+    <arg name="inMode" default=""/>
+    <arg name="inAlgo" default=""/>
+
+    <param name="viewMode" value="$(arg inMode)" />
+    <param name="typeAlgo" value="$(arg inAlgo)" />
+
+    <node
+        pkg="fallen_analyser"
+        type="pose_fallen.py"
+        name="pose_fallen"
+        respawn="true"
+        launch-prefix="xterm -e"
+    />
+
+
+</launch>

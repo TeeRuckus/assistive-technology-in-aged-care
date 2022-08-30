@@ -22,6 +22,7 @@ FALEN_DISTANCE_THRESHOLD = 250
 NODE_NAME = "pose_fallen"
 FALLEN_COUNT_THRESHOLD = 6
 
+
 #TODO: You'll need to test if the conversation with constants have worked here
 #TODO: You'll need to do the counts of the falls for the pose algorithm as well
 
@@ -537,7 +538,7 @@ class PoseFallen():
         #TODO: Try to re-factor this so you can use the argparser module for it to be cleaner
         retArg = None
         if len(args) == 0:
-            MiRoError("Please provide arguments into programme:\n" +
+            self.MiRoError("Please provide arguments into programme:\n" +
                     "\t show: show video (eye cameras) as it arrives from platform\n"+
                     "\t --stitch stitch stereo images into one image")
         else:
@@ -565,6 +566,10 @@ class PoseFallen():
 
         return  retArg
 
+    def MiRoError(self, mssg):
+        rospy.logerr(mssg)
+        sys.exit(0)
+
     def __validateMode(self, inMode):
         """
         PURPOSE: TO ensure that the current mode which has being set for the
@@ -578,11 +583,22 @@ class PoseFallen():
 
 #the code of the main loop which is needed for this node
 if __name__ == "__main__": 
-    rospy.loginfo_once("Started pose fallen node ...")
+    mode = rospy.get_param("viewMode")
+    algo = rospy.get_param("typeAlgo")
+    print("Started pose_fallen package ... ")
 
+
+    if len(mode) != 0:
+        print("Using launch file...")
+        rospy.loginfo("Using launch file ...")
+        main = PoseFallen([mode, algo])
+        main.getVideoFeed()
+    else:
+        print("Not using a launch file ... ")
+        rospy.loginfo("Not using launch file ...")
+        main = PoseFallen(sys.argv[1:])
+        main.getVideoFeed()
     #starting the  video feed and analysing if person has fallen in frames
-    main = PoseFallen(sys.argv[1:])
-    main.getVideoFeed()
 
 
 
