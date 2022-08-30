@@ -375,17 +375,14 @@ class PoseFallen():
                                 rospy.loginfo_once("Showing Bounding box mode")
                             img, hasFallen = self.showBBox(results, img)
 
-                            if hasFallen:
-                                self.toggleCameraStatesON(ii)
-                            else:
-                                self.toggleCameraStatesOFF(ii)
-                            self.chooseCameraFallen(hasFallen)
+                            self.selectFrameFallen(ii, hasFallen)
 
                         #TODO: you will need to move all these things in a function
                         elif self.__pose:
                             if self.__verbose:
                                 rospy.loginfo_once("Showing pose from media pipe")
-                            img = self.showPose(results, img)
+                            img, hasFallen = self.showPose(results, img)
+                            self.selectFrameFallen(ii, hasFallen)
 
                         #correcting the color of the image
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -401,6 +398,16 @@ class PoseFallen():
 
         for ii in range(len(outFile)):
             pass
+
+    def selectFrameFallen(self, ii, hasFallen):
+        """
+        PURPOSE:
+        """
+        if hasFallen:
+            self.toggleCameraStatesON(ii)
+        else:
+            self.toggleCameraStatesOFF(ii)
+        self.chooseCameraFallen(hasFallen)
 
     def chooseCameraFallen(self, hasFallen):
         """
@@ -512,6 +519,7 @@ class PoseFallen():
         inView = self.torsoInView(results)
 
         color = None
+        fallen = False
 
         text = ""
 
@@ -528,7 +536,7 @@ class PoseFallen():
         img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX,1, color,
                 2, cv2.LINE_AA)
 
-        return img
+        return img, fallen
 
     def __setMode(self, args):
         """

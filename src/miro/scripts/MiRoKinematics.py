@@ -556,15 +556,17 @@ if __name__ == "__main__":
     #miroRobot.subCords()
     #miroRobot.moveHead(None, None)
     #miroRobot.subHasFallen()
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
+    """
     while not rospy.core.is_shutdown():
         #miroRobot.residentOkayHaptic()
         miroRobot.turnLEDOn(np.array([255,0,0]), 255)
         #miroRobot.turnLEDOff()
         time.sleep(0.02)
+    """
 
     #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
