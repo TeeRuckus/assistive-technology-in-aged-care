@@ -16,17 +16,19 @@
 
 (defclass fallen_analyser::coords
   :super ros::object
-  :slots (_xCord _yCord ))
+  :slots (_xCord _yCord _rightCam ))
 
 (defmethod fallen_analyser::coords
   (:init
    (&key
     ((:xCord __xCord) (instance std_msgs::Float32 :init))
     ((:yCord __yCord) (instance std_msgs::Float32 :init))
+    ((:rightCam __rightCam) (instance std_msgs::Bool :init))
     )
    (send-super :init)
    (setq _xCord __xCord)
    (setq _yCord __yCord)
+   (setq _rightCam __rightCam)
    self)
   (:xCord
    (&rest __xCord)
@@ -42,6 +44,13 @@
      (progn
        (if __yCord (setq _yCord (car __yCord)))
        _yCord)))
+  (:rightCam
+   (&rest __rightCam)
+   (if (keywordp (car __rightCam))
+       (send* _rightCam __rightCam)
+     (progn
+       (if __rightCam (setq _rightCam (car __rightCam)))
+       _rightCam)))
   (:serialization-length
    ()
    (+
@@ -49,6 +58,8 @@
     (send _xCord :serialization-length)
     ;; std_msgs/Float32 _yCord
     (send _yCord :serialization-length)
+    ;; std_msgs/Bool _rightCam
+    (send _rightCam :serialization-length)
     ))
   (:serialize
    (&optional strm)
@@ -58,6 +69,8 @@
        (send _xCord :serialize s)
      ;; std_msgs/Float32 _yCord
        (send _yCord :serialize s)
+     ;; std_msgs/Bool _rightCam
+       (send _rightCam :serialize s)
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
@@ -66,23 +79,29 @@
      (send _xCord :deserialize buf ptr-) (incf ptr- (send _xCord :serialization-length))
    ;; std_msgs/Float32 _yCord
      (send _yCord :deserialize buf ptr-) (incf ptr- (send _yCord :serialization-length))
+   ;; std_msgs/Bool _rightCam
+     (send _rightCam :deserialize buf ptr-) (incf ptr- (send _rightCam :serialization-length))
    ;;
    self)
   )
 
-(setf (get fallen_analyser::coords :md5sum-) "6466c8bc21dcd864939639eb1c9ad609")
+(setf (get fallen_analyser::coords :md5sum-) "06455b0f277279021e59afa6a4c4a32a")
 (setf (get fallen_analyser::coords :datatype-) "fallen_analyser/coords")
 (setf (get fallen_analyser::coords :definition-)
       "std_msgs/Float32 xCord
 std_msgs/Float32 yCord
+std_msgs/Bool rightCam
 
 ================================================================================
 MSG: std_msgs/Float32
 float32 data
+================================================================================
+MSG: std_msgs/Bool
+bool data
 ")
 
 
 
-(provide :fallen_analyser/coords "6466c8bc21dcd864939639eb1c9ad609")
+(provide :fallen_analyser/coords "06455b0f277279021e59afa6a4c4a32a")
 
 

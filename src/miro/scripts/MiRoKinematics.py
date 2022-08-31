@@ -45,6 +45,7 @@ class MiRoKinematics:
         self.__LEDToggle = True
         self.__residentOkay = False
         rospy.init_node(NODE_NAME, anonymous=True)
+        self.__coordsRight = False
 
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
 
@@ -104,7 +105,9 @@ class MiRoKinematics:
             self.checkHeadWorkSpaceLift()
             self.checkHeadWorkSpacePitch()
             print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
-            self.__pubKin.publish(self.__kinHead)
+
+            #only publish commands when the head is stationary
+            #self.__pubKin.publish(self.__kinHead)
 
 
 
@@ -151,7 +154,9 @@ class MiRoKinematics:
 
 
 
-            time.sleep(0.02)
+            #TODO: you will need to remember the sleep time for this
+            #time.sleep(0.02)
+            time.sleep(0.5)
 
     def respondFallen(self):
         """
@@ -245,7 +250,12 @@ class MiRoKinematics:
             #retValue = math.radians((dx)*0.1)
             retValue = math.radians(10.0)
         """
-        retValue =  math.radians((dx)*-0.1)
+
+        #retValue =  math.radians((dx)*-0.1)
+
+        retValue +=  miro.constants.YAW_RAD_MAX - math.radians((dx)*0.1)
+
+        #moving the head on the left hemisphere of the head
 
         #the middle of 
         """
@@ -499,6 +509,9 @@ class MiRoKinematics:
         """
         #add another point to the path of residents head
         self.__facePos = (int(data.xCord.data), int(data.yCord.data))
+        self.__coordsRight = bool(data.rightCam.data)
+
+        rospy.loginfo("Coords Right: %s " % self.__coordsRight)
 
         if self.__verbose:
             rospy.loginfo("received Coordinates: (%.3f, %.3f)" %
@@ -552,11 +565,10 @@ if __name__ == "__main__":
     rospy.loginfo_once("Starting MiRo Kinematics node ...")
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
-    #miroRobot.moveHeadCords()
-    #miroRobot.subCords()
-    #miroRobot.moveHead(None, None)
-    #miroRobot.subHasFallen()
-    miroRobot.respondFallen()
+    miroRobot.moveHeadCords()
+
+    #TODO: you will need to uncomment this, and explore this a little bit later
+    #miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 

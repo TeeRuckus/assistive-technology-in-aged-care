@@ -17,6 +17,7 @@
 
 #include <std_msgs/Float32.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 
 namespace fallen_analyser
 {
@@ -27,11 +28,13 @@ struct coords_
 
   coords_()
     : xCord()
-    , yCord()  {
+    , yCord()
+    , rightCam()  {
     }
   coords_(const ContainerAllocator& _alloc)
     : xCord(_alloc)
-    , yCord(_alloc)  {
+    , yCord(_alloc)
+    , rightCam(_alloc)  {
   (void)_alloc;
     }
 
@@ -42,6 +45,9 @@ struct coords_
 
    typedef  ::std_msgs::Float32_<ContainerAllocator>  _yCord_type;
   _yCord_type yCord;
+
+   typedef  ::std_msgs::Bool_<ContainerAllocator>  _rightCam_type;
+  _rightCam_type rightCam;
 
 
 
@@ -73,7 +79,8 @@ template<typename ContainerAllocator1, typename ContainerAllocator2>
 bool operator==(const ::fallen_analyser::coords_<ContainerAllocator1> & lhs, const ::fallen_analyser::coords_<ContainerAllocator2> & rhs)
 {
   return lhs.xCord == rhs.xCord &&
-    lhs.yCord == rhs.yCord;
+    lhs.yCord == rhs.yCord &&
+    lhs.rightCam == rhs.rightCam;
 }
 
 template<typename ContainerAllocator1, typename ContainerAllocator2>
@@ -130,12 +137,12 @@ struct MD5Sum< ::fallen_analyser::coords_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "6466c8bc21dcd864939639eb1c9ad609";
+    return "06455b0f277279021e59afa6a4c4a32a";
   }
 
   static const char* value(const ::fallen_analyser::coords_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x6466c8bc21dcd864ULL;
-  static const uint64_t static_value2 = 0x939639eb1c9ad609ULL;
+  static const uint64_t static_value1 = 0x06455b0f27727902ULL;
+  static const uint64_t static_value2 = 0x1e59afa6a4c4a32aULL;
 };
 
 template<class ContainerAllocator>
@@ -156,10 +163,14 @@ struct Definition< ::fallen_analyser::coords_<ContainerAllocator> >
   {
     return "std_msgs/Float32 xCord\n"
 "std_msgs/Float32 yCord\n"
+"std_msgs/Bool rightCam\n"
 "\n"
 "================================================================================\n"
 "MSG: std_msgs/Float32\n"
 "float32 data\n"
+"================================================================================\n"
+"MSG: std_msgs/Bool\n"
+"bool data\n"
 ;
   }
 
@@ -180,6 +191,7 @@ namespace serialization
     {
       stream.next(m.xCord);
       stream.next(m.yCord);
+      stream.next(m.rightCam);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -204,6 +216,9 @@ struct Printer< ::fallen_analyser::coords_<ContainerAllocator> >
     s << indent << "yCord: ";
     s << std::endl;
     Printer< ::std_msgs::Float32_<ContainerAllocator> >::stream(s, indent + "  ", v.yCord);
+    s << indent << "rightCam: ";
+    s << std::endl;
+    Printer< ::std_msgs::Bool_<ContainerAllocator> >::stream(s, indent + "  ", v.rightCam);
   }
 };
 

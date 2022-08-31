@@ -21,6 +21,7 @@ class coords {
       // initObj === null is a special case for deserialization where we don't initialize fields
       this.xCord = null;
       this.yCord = null;
+      this.rightCam = null;
     }
     else {
       if (initObj.hasOwnProperty('xCord')) {
@@ -35,6 +36,12 @@ class coords {
       else {
         this.yCord = new std_msgs.msg.Float32();
       }
+      if (initObj.hasOwnProperty('rightCam')) {
+        this.rightCam = initObj.rightCam
+      }
+      else {
+        this.rightCam = new std_msgs.msg.Bool();
+      }
     }
   }
 
@@ -44,6 +51,8 @@ class coords {
     bufferOffset = std_msgs.msg.Float32.serialize(obj.xCord, buffer, bufferOffset);
     // Serialize message field [yCord]
     bufferOffset = std_msgs.msg.Float32.serialize(obj.yCord, buffer, bufferOffset);
+    // Serialize message field [rightCam]
+    bufferOffset = std_msgs.msg.Bool.serialize(obj.rightCam, buffer, bufferOffset);
     return bufferOffset;
   }
 
@@ -55,11 +64,13 @@ class coords {
     data.xCord = std_msgs.msg.Float32.deserialize(buffer, bufferOffset);
     // Deserialize message field [yCord]
     data.yCord = std_msgs.msg.Float32.deserialize(buffer, bufferOffset);
+    // Deserialize message field [rightCam]
+    data.rightCam = std_msgs.msg.Bool.deserialize(buffer, bufferOffset);
     return data;
   }
 
   static getMessageSize(object) {
-    return 8;
+    return 9;
   }
 
   static datatype() {
@@ -69,7 +80,7 @@ class coords {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return '6466c8bc21dcd864939639eb1c9ad609';
+    return '06455b0f277279021e59afa6a4c4a32a';
   }
 
   static messageDefinition() {
@@ -77,10 +88,14 @@ class coords {
     return `
     std_msgs/Float32 xCord
     std_msgs/Float32 yCord
+    std_msgs/Bool rightCam
     
     ================================================================================
     MSG: std_msgs/Float32
     float32 data
+    ================================================================================
+    MSG: std_msgs/Bool
+    bool data
     `;
   }
 
@@ -102,6 +117,13 @@ class coords {
     }
     else {
       resolved.yCord = new std_msgs.msg.Float32()
+    }
+
+    if (msg.rightCam !== undefined) {
+      resolved.rightCam = std_msgs.msg.Bool.Resolve(msg.rightCam)
+    }
+    else {
+      resolved.rightCam = new std_msgs.msg.Bool()
     }
 
     return resolved;

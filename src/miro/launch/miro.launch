@@ -12,7 +12,7 @@
         type="MiRoVoice.py"
         name="MiROVoice"
         respawn="true"
-        launch-prefix="xterm -e"
+        launch-prefix="xterm -hold -e"
     />
 
 

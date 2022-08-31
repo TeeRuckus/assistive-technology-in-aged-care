@@ -9,9 +9,11 @@
         pkg="fallen_analyser"
         type="pose_fallen.py"
         name="pose_fallen"
-        respawn="true"
-        launch-prefix="xterm -e"
+        output="screen"
+        launch-prefix="xterm -hold -e" 
     />
 
+        <!-- respawn="true" -->
+        <!-- launch-prefix="xterm -e" -->
 
 </launch>

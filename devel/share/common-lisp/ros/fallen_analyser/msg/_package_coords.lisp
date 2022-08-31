@@ -3,4 +3,6 @@
           XCORD
           YCORD-VAL
           YCORD
+          RIGHTCAM-VAL
+          RIGHTCAM
 ))

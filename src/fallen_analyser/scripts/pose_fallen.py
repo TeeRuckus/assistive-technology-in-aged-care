@@ -47,6 +47,7 @@ class PoseFallen():
         self.__fallenCounter = 0
         self.__leftCamFallen = False
         self.__rightCamFallen = False
+        self.__coordsCamRight = False
 
         #subscribing to the required nodes and the data
         if self.__verbose:
@@ -61,6 +62,8 @@ class PoseFallen():
         camRTopic = topicBaseName + "/sensors/camr/compressed"
         #TODO: you'll have to come back and see if this is going to be necessary
 
+        #SUBSCRIBERS
+
         if self.__verbose:
             rospy.loginfo("subscribing to left and right camera ... ")
 
@@ -72,6 +75,8 @@ class PoseFallen():
 
         if self.__verbose:
             rospy.loginfo("Creating Publisher, to publish coordinates")
+
+        #PUBLISHERS
 
         self.__coordsPub = rospy.Publisher("resident/coords/",
                 coords, queue_size=10)
@@ -254,10 +259,12 @@ class PoseFallen():
         """
         #TODO: you will need to build up some forgiveness in this algorithm for dropped out frame rates
 
-        #to force a fall on this controller
+        #to force a fall on this controller. Uncomment for testing
+        """
         fallenTrigger = True
         self.__leftCamFallen = True
         self.__rightCamFallen = True
+        """
 
         fallenStatus = Bool()
         rospy.loginfo("The current count: %s" % self.__fallenCounter)
@@ -347,24 +354,20 @@ class PoseFallen():
                     #getting results from the current frame
                     results, img = self.findPose(img)
 
-                    #TODO: you'll need to double check with Tele if this is going to be acceptable
-                    resultsPub, imgPub = self.findPose(
+                    #TODO: You will need to make an algorithm which will get the coordinates where the resident is the closest to the middle of the robot
+                    #resultsPub, imgPub = self.findPose(
+                            #self.__inputCamera[miro.constants.CAM_R])
+
+                    resultsPubL, imgPubL = self.findPose(
+                            self.__inputCamera[miro.constants.CAM_L])
+
+                    resultsPubR, imgPubR  = self.findPose(
                             self.__inputCamera[miro.constants.CAM_R])
 
-                    #only going to publish coordinates from the left eye
-                    coordsFound = self.getNoseCordinates(resultsPub,
-                        imgPub.shape)
 
-                    #gaurding against publish none messages
-                    if coordsFound:
-                        pubCoords = coords()
-                        pubCoords.xCord.data = coordsFound[0]
-                        pubCoords.yCord.data = coordsFound[1]
-                        self.__coordsPub.publish(pubCoords)
-
-                    if coordsFound and self.__verbose:
-                        rospy.loginfo("Coordinates: %s %s" % (coordsFound[0],
-                            coordsFound[1]))
+                    #TODO: you will need to put this mess into a function
+                    self.selectEyeCoords(resultsPubL, imgPubL, resultsPubR,
+                            imgPubR)
 
                     #print("mode, ", self.__mode)
                     if self.__mode == "show":
@@ -374,7 +377,6 @@ class PoseFallen():
                             if  self.__verbose:
                                 rospy.loginfo_once("Showing Bounding box mode")
                             img, hasFallen = self.showBBox(results, img)
-
                             self.selectFrameFallen(ii, hasFallen)
 
                         #TODO: you will need to move all these things in a function
@@ -398,6 +400,63 @@ class PoseFallen():
 
         for ii in range(len(outFile)):
             pass
+
+
+    def selectEyeCoords(self, resultsPubL, imgPubL, resultsPubR, imgPubR):
+        """
+        PURPOSE:
+        """
+        noseL = None
+        noseR = None
+
+        if resultsPubL.pose_landmarks:
+            noseL = resultsPubL.pose_landmarks.landmark[self.__mpHolistic.PoseLandmark.NOSE.value]
+
+        if resultsPubR.pose_landmarks:
+            noseR = resultsPubR.pose_landmarks.landmark[self.__mpHolistic.PoseLandmark.NOSE.value]
+
+
+        #only going to publish coordinates from the right eye
+        coordsFound = self.getNoseCordinates(resultsPubR,
+            imgPubR.shape)
+        self.__coordsCamRight = True
+
+        #if they're going to be present in both frames
+        if noseL and noseR:
+            #swap cameras if the visibility is better in the other lens
+            if noseL.visibility > noseR.visibility:
+                self.__coordsCamRight = False
+                coordsFound = self.getNoseCordinates(resultsPubL,
+                    imgPubL.shape)
+
+                #in only going to be present in the left camera only
+        if noseL and not  noseR:
+            self.__coordsCamRight = False
+            coordsFound = self.getNoseCordinates(resultsPubL,
+                imgPubL.shape)
+
+
+        #gaurding against publish none messages
+        if coordsFound:
+            self.publishCoords(coordsFound)
+
+        if coordsFound and self.__verbose:
+            rospy.loginfo("Coordinates: %s %s" % (coordsFound[0],
+                coordsFound[1]))
+
+
+    def publishCoords(self, coordsFound):
+        """
+        PURPOSE
+        """
+        pubCoords = coords()
+        #isRightCam = Bool()
+        #isRightCam.data = self.__coordsCamRight
+
+        pubCoords.xCord.data = coordsFound[0]
+        pubCoords.yCord.data = coordsFound[1]
+        pubCoords.rightCam.data = self.__coordsCamRight
+        self.__coordsPub.publish(pubCoords)
 
     def selectFrameFallen(self, ii, hasFallen):
         """
