@@ -97,17 +97,18 @@ class MiRoKinematics:
             timeHeadDelay = time.time() - self.__startTime
 
 
-            print("x: ", self.__facePos[0])
+            rospy.loginfo("x: %s " % self.__facePos[0])
             self.__kinHead.position[miro.constants.JOINT_YAW] = \
                 self.moveHead2XCoord(self.__facePos[0])
 
             self.checkHeadWorkspaceYaw()
             self.checkHeadWorkSpaceLift()
             self.checkHeadWorkSpacePitch()
-            print("yaw: ", self.__kinHead.position[miro.constants.JOINT_YAW])
+            rospy.loginfo("yaw: %s" % self.__kinHead.position[miro.constants.JOINT_YAW])
+
 
             #only publish commands when the head is stationary
-            #self.__pubKin.publish(self.__kinHead)
+            self.__pubKin.publish(self.__kinHead)
 
 
 
@@ -251,9 +252,13 @@ class MiRoKinematics:
             retValue = math.radians(10.0)
         """
 
-        #retValue =  math.radians((dx)*-0.1)
-
-        retValue +=  miro.constants.YAW_RAD_MAX - math.radians((dx)*0.1)
+        if self.__coordsRight:
+            #equation to get results from right camera
+            retValue =  math.radians((dx)*-0.1)
+        #I want to explicitly look for false value, and do nothing for None
+        elif self.__coordsRight == False:
+            #equation to get results from left camera
+            retValue +=  miro.constants.YAW_RAD_MAX - math.radians((dx)*0.1)
 
         #moving the head on the left hemisphere of the head
 
@@ -511,7 +516,7 @@ class MiRoKinematics:
         self.__facePos = (int(data.xCord.data), int(data.yCord.data))
         self.__coordsRight = bool(data.rightCam.data)
 
-        rospy.loginfo("Coords Right: %s " % self.__coordsRight)
+        #rospy.loginfo("Coords Right: %s " % self.__coordsRight)
 
         if self.__verbose:
             rospy.loginfo("received Coordinates: (%.3f, %.3f)" %
