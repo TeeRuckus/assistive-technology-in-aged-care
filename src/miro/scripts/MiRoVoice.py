@@ -183,22 +183,23 @@ class Streamer():
 
     #TODO: I don't really want to touch this but, I am going to make the same 
     #function but it's going to take any wave format
-    def playSound(self, inFile):
+    def playSound(self, inFile, path):
         """
         PURPOSE:
         """
 
-        self.decodeFile("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
+        self.decodeFile(inFile, path)
 
         count = 0
         exit = False
+        finishedPlaying = False
 
         # safety dropout if receiver not present
         dropout_dataR = -1
         dropout_count = 3
 
         # loop
-        while not rospy.core.is_shutdown() :
+        while not rospy.core.is_shutdown() and not finishedPlaying:
             #we only want to play the warning signal once we have subscribed
             #from the signal
             if self.__playWarningSignal:
@@ -224,6 +225,9 @@ class Streamer():
                 if count == 0:
                     count = 10
                     print ("streaming:", self.dataR, "/", len(self.data), "bytes")
+
+                    if self.dataR >= len(self.data):
+                        finishedPlaying = True
 
                     # check at those moments if we are making progress, also
                     if dropout_dataR == self.dataR:
@@ -499,7 +503,10 @@ if __name__ == "__main__":
 
     soundInterface = Streamer()
     #soundInterface.playSound(HELP_SIGNAL_FILE)
-    soundInterface.playSound(HELP_SIGNAL_FILE)
+
+
+    #this is just saying hello
+    soundInterface.playSound("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
     #soundInterface.saveAudioMics()
 
 
