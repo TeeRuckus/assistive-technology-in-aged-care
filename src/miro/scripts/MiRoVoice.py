@@ -65,10 +65,10 @@ class Streamer():
 
     def __init__(self):
         rospy.init_node(NODE_NAME, anonymous=True)
-        self.__playWarningSignal = False
+        #self.__playWarningSignal = False
+        self.__playWarningSignal = True
         self.__micBuff = np.zeros((0,4), 'uint16')
         self.__outBuff = None
-        self.__bufferStuff = 0
         
         # get robot name
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
@@ -76,9 +76,9 @@ class Streamer():
         #SUBSCRIBERS
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
 
-        topic = topicBaseName + "/sensors/mics"
-        rospy.Subscriber(topic, Int16MultiArray,
-                self.callBackMics, queue_size=5, tcp_nodelay=True)
+        #topic = topicBaseName + "/sensors/mics"
+        #rospy.Subscriber(topic, Int16MultiArray,
+                #self.callBackMics, queue_size=5, tcp_nodelay=True)
 
 
         #PUBLISHERS
@@ -92,6 +92,7 @@ class Streamer():
         self.subStream = rospy.Subscriber(topic, UInt16MultiArray,
                 self.callback_stream, queue_size=1, tcp_nodelay=True)
 
+        """
         #loading in the wav file into memory
         fileName = "/tmp/" + HELP_SIGNAL_FILE + ".decode"
 
@@ -122,6 +123,12 @@ class Streamer():
         # state
         self.__bufferSpace = 0
         self.__bufferTotal = 0
+        """
+
+        self.dataR = 0
+        self.data = 0
+        self.__bufferSpace = 0
+        self.__bufferTotal = 0
 
 
 
@@ -139,7 +146,49 @@ class Streamer():
         """
         self.__playWarningSignal = self.__validateSound(inSound)
 
-    def playSound(self):
+    def decodeFile(self, inDecodeName, path):
+        """
+        PURPOSE:
+        """
+        fileName = "/tmp/" + inDecodeName  + ".decode"
+
+        #if the decode file is not found, create a new now
+        if not os.path.isfile(fileName):
+            cmd = "ffmpeg -y -i \"" + path + "\" -f s16le -acodec pcm_s16le -ar 8000 -ac 1 \"" + fileName + "\""
+
+            os.system(cmd)
+            if not os.path.isfile(fileName):
+                rospy.loginfo("failed decode mp3")
+                sys.exit(0)
+
+        #creating the file to decode the sound from
+
+        #loading the wave file into the program 
+        dat = self.readBinary(fileName)
+        self.dataR = 0
+        # convert to numpy array
+        dat = np.fromstring(dat, dtype='int16').astype(np.int32)
+        # normalise wav
+        dat = dat.astype(np.float)
+        sc = 32767.0 / np.max(np.abs(dat))
+        dat *= sc
+        dat = dat.astype(np.int16).tolist()
+
+        # store
+        self.data = dat
+
+        # state
+        self.__bufferSpace = 0
+        self.__bufferTotal = 0
+
+    #TODO: I don't really want to touch this but, I am going to make the same 
+    #function but it's going to take any wave format
+    def playSound(self, inFile):
+        """
+        PURPOSE:
+        """
+
+        self.decodeFile("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
 
         count = 0
         exit = False
@@ -153,7 +202,7 @@ class Streamer():
             #we only want to play the warning signal once we have subscribed
             #from the signal
             if self.__playWarningSignal:
-                if not os.path.isfile(HELP_SIGNAL_FILE):
+                if not os.path.isfile(inFile):
                     exit = True
                 # if we've received a report
                 if self.__bufferTotal > 0:
@@ -376,7 +425,6 @@ class Streamer():
         """
         self.__bufferSpace = msg.data[0]
         self.__bufferTotal = msg.data[1]
-        self.__bufferStuff = self.__bufferTotal - self.__bufferSpace
 
     def readBinary(self, fileName):
         """
@@ -442,7 +490,6 @@ class Streamer():
 
 if __name__ == "__main__":
     #determining if MiRo is being ran offline or online
-    """
     mode = None
     try:
         mode = sys.argv[1]
@@ -451,38 +498,13 @@ if __name__ == "__main__":
         print("no argument, running default ...")
 
     soundInterface = Streamer()
-    soundInterface.playSound()
-    """
+    #soundInterface.playSound(HELP_SIGNAL_FILE)
+    soundInterface.playSound(HELP_SIGNAL_FILE)
+    #soundInterface.saveAudioMics()
 
-    print("hello motherfucking world")
-    soundInterface = Streamer()
-    soundInterface.saveAudioMics()
 
     #we will actually need to let the sound buffer actually fill up with
     #some bytes
 
 
 
-    """
-    while not rospy.core.is_shutdown():
-
-        #TODO: you will need to come back and figure out what this going to do
-        #downsample for playback 
-
-        outBuff = np.zeros((int(SAMPLE_COUNT / 2.5), 0))
-        for c in range(4):
-            i = np.arrange(0, SAMPLE_COUNT, 2.5)
-            j = np.arrange(0, SAMPLE_COUNT)
-            x = np.interp(i,j, self.__outBuff[:, c])
-            outBuff = np.concatenate((outbuff, x[:, np.newaxis]), axis=1)
-
-
-        #channel names 
-        chan= = ["LEFT", "RIGHT", "CENTRE", "TAIL"]
-
-        #looping
-        while not rospy.core.is_shutdown():
-
-            #checking the stuff output buffer
-
-    """
