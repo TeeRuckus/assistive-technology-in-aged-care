@@ -10,12 +10,32 @@ from gtts import gTTS
 import speech_recognition as sr
 #offline speech recognition engine 
 from pocketsphinx import LiveSpeech
+import wave, struct
 
 
 NODE_NAME = "MiROVoice"
 
 MIRO_INTRO ="Hello, I am MiRo. I have seen that you have fallen over. Are you Okay?  Tap me on the head if you're okay otherwise, I can go and get help. If you prefer you can respond with yes or no, or sorry to hear the instructions again."
-#from Errors import MiRoError
+
+# amount to keep the buffer stuffed - larger numbers mean
+# less prone to dropout, but higher latency when we stop
+# streaming. with a read-out rate of 8k, 4000 samples will
+# buffer for half of a second, for instance.
+BUFFER_STUFF_SAMPLES = 4000
+
+# messages larger than this will be dropped by the receiver,
+# however, so - whilst we can stuff the buffer more than this -
+# we can only send this many samples in any single message.
+BUFFER_MARGIN = 1000
+BUFFER_MAX = BUFFER_STUFF_SAMPLES + BUFFER_MARGIN
+BUFFER_MIN = BUFFER_STUFF_SAMPLES - BUFFER_MARGIN
+
+MAX_STREAM_MSG_SIZE = (4096 - 48)
+RECORD_TIME = 2
+MIC_SAMPLE_RATE = 20000
+SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
+
+
 
 
 
@@ -46,11 +66,31 @@ class Streamer():
     def __init__(self):
         rospy.init_node(NODE_NAME, anonymous=True)
         self.__playWarningSignal = False
+        self.__micBuff = np.zeros((0,4), 'uint16')
+        self.__outBuff = None
+        self.__bufferStuff = 0
         
+        # get robot name
+        topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
+
         #SUBSCRIBERS
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
 
+        topic = topicBaseName + "/sensors/mics"
+        rospy.Subscriber(topic, Int16MultiArray,
+                self.callBackMics, queue_size=5, tcp_nodelay=True)
+
+
         #PUBLISHERS
+        topic = topicBaseName + "/control/stream"
+        self.pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
+
+        topic = topicBaseName + "/platform/log"
+        self.subLog = rospy.Subscriber(topic, String, self.callback_log, queue_size=5, tcp_nodelay=True)
+
+        topic = topicBaseName + "/sensors/stream"
+        self.subStream = rospy.Subscriber(topic, UInt16MultiArray,
+                self.callback_stream, queue_size=1, tcp_nodelay=True)
 
         #loading in the wav file into memory
         fileName = "/tmp/" + HELP_SIGNAL_FILE + ".decode"
@@ -80,24 +120,10 @@ class Streamer():
         self.data = dat
 
         # state
-        self.bufferSpace = 0
-        self.bufferTotal = 0
+        self.__bufferSpace = 0
+        self.__bufferTotal = 0
 
-        # get robot name
-        topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
 
-        # publish
-        topic = topicBaseName + "/control/stream"
-        self.pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
-
-        topic = topicBaseName + "/platform/log"
-        self.subLog = rospy.Subscriber(topic, String, self.callback_log, queue_size=5, tcp_nodelay=True)
-
-        topic = topicBaseName + "/sensors/stream"
-        self.subStream = rospy.Subscriber(topic, UInt16MultiArray,
-                self.callback_stream, queue_size=1, tcp_nodelay=True)
-
-        #setting up required variables 
 
     @property
     def playWarningSignal(self):
@@ -130,9 +156,9 @@ class Streamer():
                 if not os.path.isfile(HELP_SIGNAL_FILE):
                     exit = True
                 # if we've received a report
-                if self.bufferTotal > 0:
+                if self.__bufferTotal > 0:
                     # compute amount to send
-                    buffer_rem = self.bufferTotal - self.bufferSpace
+                    buffer_rem = self.__bufferTotal - self.__bufferSpace
                     n_bytes = BUFFER_STUFF_BYTES - buffer_rem
                     n_bytes = max(n_bytes, 0)
                     n_bytes = min(n_bytes, MAX_STREAM_MSG_SIZE)
@@ -163,6 +189,43 @@ class Streamer():
                 # count tenths
                 count -= 1
             time.sleep(0.1)
+
+
+    def saveAudioMics(self):
+        """
+        PURPOSE:
+        """
+
+        while not rospy.core.is_shutdown():
+
+            #if the recording has finished
+            if not self.__outBuff is None:
+                break
+
+            #re-fresh rate of 50Hz
+            time.sleep(0.02)
+
+
+        #recording sound from mics to file 
+        outputFileName = '/tmp/miroResidentAudio.wav'
+        file = wave.open(outputFileName, "wb")
+        file.setsampwidth(2)
+        file.setframerate(MIC_SAMPLE_RATE)
+
+
+        #writting the recorded data to file for access later on
+        print("Writing left and right ears to file")
+        file.setnchannels(2)
+        x = np.reshape(self.__outBuff[:, [0,1]], (-1))
+
+        for s in x:
+            file.writeframes(struct.pack('<h',s))
+
+        #closing the file
+        file.close()
+        print("audio has being saved")
+
+
 
     def determineResponse(self, response):
         """
@@ -217,7 +280,7 @@ class Streamer():
 
         return miroResponse
 
-    def listeToResidentOnline(self):
+    def listenToResidentOnline(self):
         """
         PURPOSE: This will use google speech recognition API to listen to the
         resident. For the use of API, this sub-module will require an internet
@@ -311,8 +374,9 @@ class Streamer():
         """
         PURPOSE:
         """
-        self.bufferSpace = msg.data[0]
-        self.bufferTotal = msg.data[1]
+        self.__bufferSpace = msg.data[0]
+        self.__bufferTotal = msg.data[1]
+        self.__bufferStuff = self.__bufferTotal - self.__bufferSpace
 
     def readBinary(self, fileName):
         """
@@ -329,6 +393,33 @@ class Streamer():
         PURPOSE:
         """
         self.__playWarningSignal = bool(data.data)
+
+    def callBackMics(self, msg):
+        """
+        PURPOSE:
+        """
+
+        #if they mics are currently recording
+        if not self.__micBuff is None:
+
+            #appending the mic data to store
+            data = np.array(msg.data, 'int16')
+            oneAxis = np.reshape(data, (-1,500))
+            self.__micBuff = np.concatenate((self.__micBuff, oneAxis.T))
+
+
+            #reporting the progress of recording
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
+            #TODO: come back and change this to a true and false statement
+            #finished recording
+
+            if self.__micBuff.shape[0] >= SAMPLE_COUNT:
+                #ending the recording 
+                self.__outBuff = self.__micBuff
+                self.__micBuff = None
+                print("OK!")
 
     def __validateSound(self, inSound):
         """
@@ -350,8 +441,48 @@ class Streamer():
         sys.exit(0)
 
 if __name__ == "__main__":
+    #determining if MiRo is being ran offline or online
+    """
+    mode = None
+    try:
+        mode = sys.argv[1]
+        print(mode)
+    except IndexError as err:
+        print("no argument, running default ...")
+
     soundInterface = Streamer()
     soundInterface.playSound()
+    """
+
+    print("hello motherfucking world")
+    soundInterface = Streamer()
+    soundInterface.saveAudioMics()
+
+    #we will actually need to let the sound buffer actually fill up with
+    #some bytes
 
 
 
+    """
+    while not rospy.core.is_shutdown():
+
+        #TODO: you will need to come back and figure out what this going to do
+        #downsample for playback 
+
+        outBuff = np.zeros((int(SAMPLE_COUNT / 2.5), 0))
+        for c in range(4):
+            i = np.arrange(0, SAMPLE_COUNT, 2.5)
+            j = np.arrange(0, SAMPLE_COUNT)
+            x = np.interp(i,j, self.__outBuff[:, c])
+            outBuff = np.concatenate((outbuff, x[:, np.newaxis]), axis=1)
+
+
+        #channel names 
+        chan= = ["LEFT", "RIGHT", "CENTRE", "TAIL"]
+
+        #looping
+        while not rospy.core.is_shutdown():
+
+            #checking the stuff output buffer
+
+    """
