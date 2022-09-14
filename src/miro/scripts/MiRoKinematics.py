@@ -194,7 +194,6 @@ class MiRoKinematics:
                     #if sonarReading <= 0.4:
                     if sonarReading <= 0.3:
                         self.__miroStopped = True
-                        rospy.loginfo("STOP NIGGA")
                         helpTimerStart = time.time()
 
                         #starting the timer
@@ -570,10 +569,10 @@ if __name__ == "__main__":
     rospy.loginfo_once("Starting MiRo Kinematics node ...")
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
-    miroRobot.moveHeadCords()
+    #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 

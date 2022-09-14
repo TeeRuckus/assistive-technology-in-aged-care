@@ -5,16 +5,23 @@ import numpy as np
 import time
 import sys
 import os
+from gtts import gTTS
+#various API's for speech recognition
+import speech_recognition as sr
+#offline speech recognition engine 
+from pocketsphinx import LiveSpeech
 
 
 NODE_NAME = "MiROVoice"
 
+MIRO_INTRO ="Hello, I am MiRo. I have seen that you have fallen over. Are you Okay?  Tap me on the head if you're okay otherwise, I can go and get help. If you prefer you can respond with yes or no, or sorry to hear the instructions again."
 #from Errors import MiRoError
 
 
 
 #TODO: you will need to make the naming conventions here all consistent with each other
 #TODO: you will need to get rid of depreciated method from the program and file 
+#TODO: you will need to have a setter in here which will set the mode of the robot. Whether to use the online API, or to just use the offline version
 
 #going to hard code the path to the signals which MiRo will require
 HELP_SIGNAL_FILE = "test_signal.mp3"
@@ -26,6 +33,16 @@ BUFFER_STUFF_BYTES = 4000
 MAX_STREAM_MSG_SIZE = (4096 - 48)
 #this is taken from the mdk/bin/shared/client_stream.py file 
 class Streamer():
+
+    #TODO: you will need to do a search to determine if you have used self infront of each word
+    hotKeys = ["YES", "NO", "YEAH", "NAH", "SORRY"]
+    responses = {
+            "YES" : "I am glad that you're okay. I am switching off now.",
+            "NO" : "Please wait for a moment. I am going to get help.",
+            #this will be wherever the intro file is located
+            "SORRY" : MIRO_INTRO
+            }
+
     def __init__(self):
         rospy.init_node(NODE_NAME, anonymous=True)
         self.__playWarningSignal = False
@@ -147,6 +164,140 @@ class Streamer():
                 count -= 1
             time.sleep(0.1)
 
+    def determineResponse(self, response):
+        """
+        PURPOSE: To look for hot words inside the resident's speech, and depending
+        on the hot words found MiRo will determine the correct response.
+        """
+        exit = False
+        miroResponse = ""
+        for word in response:
+            word = word.strip().upper()
+            if word in self.hotKeys:
+                print("determineResponse hot word: %s" % word)
+                print("valid response")
+                exit = True
+                if word == "YES" or word == "YEAH":
+                    print("you said yes")
+                    miroResponse = self.responses["YES"]
+                elif word == "NO" or word == "NAH":
+                    print("you said no")
+                    miroResponse = self.responses["NO"]
+                elif word == "SORRY":
+                    print("you said sorry")
+                    miroResponse = self.responses["SORRY"]
+            else:
+                miroResponse = "Sorry I didn't catch that. Can you please repeat it again"
+
+
+        return miroResponse, exit
+
+    def listenToResidentOffline(self):
+        """
+        PURPOSE: To convert speech into transcribed text. The transcribed text
+        will be the residents speech. The purpose is to allow MiRo to be able to
+        have some interaction with the residents
+        """
+        print("listening to resident ... ")
+
+        miroResponse = ""
+        exit = False
+        #you might need to have a time out time when you port this into ros
+        timeStart = time.time()
+
+        while not exit:
+            #listening for audio till all the exit conditions are met
+            phrase = LiveSpeech()
+            phraseIter = iter(phrase)
+
+            if phraseIter:
+                wordIter = str(next(phraseIter)).split(" ")
+                print(wordIter)
+                miroResponse, exit  = determineResponse(wordIter)
+
+        return miroResponse
+
+    def listeToResidentOnline(self):
+        """
+        PURPOSE: This will use google speech recognition API to listen to the
+        resident. For the use of API, this sub-module will require an internet
+        connection, and recognition speeds will be determined by internet speed.
+        """
+
+        miroResponse = ""
+        exit = False
+
+        #going to be using google API's to do speech recognition 
+        r = sr.Recognizer()
+        mic = sr.Microphone()
+
+        text = ""
+        while not exit:
+            with mic as source:
+                audio = r.listen(source)
+
+                try:
+                    text = r.recognize_google(audio)
+                except sr.UnknownValueError as err:
+                    print("couldn't hear what you were saying")
+
+                text = text.split(" ")
+                print(text)
+                miroResponse, exit = determineResponse(text)
+
+        return miroResponse
+
+    def generateSpeech(self, inSpeech, inLan="en", accent="com.au", speakSlow=False):
+        """
+        ASSERTION: Will convert the inputted text into a voice
+        """
+        print("generating speech")
+        tts = gTTS(text=inSpeech, lang=inLan, tld=accent, slow=speakSlow)
+        return tts
+
+    def speakComputer(self, inGttsObj, fileName="voice.mp3"):
+        """
+        PURPOSE: This will play MiRO's voice from the computer.
+        """
+
+        print("the computer is speaking...")
+        if inGttsObj:
+            print("creating a mp3 file ...")
+            inGttsObj.save(fileName)
+
+        ps.playsound(fileName)
+
+    def speakMiRo(self, inGttsObj):
+        """
+        PURPOSE:
+        """
+        #you will want to first generate a speech format in the wav format, and 
+        #then you will want to send that to MiRo to actually speak and say what 
+        #he wants to say as well
+
+    def saveMP3(inGttsObj, fileName):
+        """
+        PURPOSE: To save a text-to-speech object into an .mp3 format.
+        """
+        #forcing the file extension to be mp3 regardless of extension
+        inGttsObj.save(fileName.split(".")[0] + ".mp3")
+
+    def saveWAV(inGttsObj, fileName):
+        """
+        PURPOSE: To save a text-to-speech object into a .wave format.
+        """
+        #foricing the file extension to be a wav format regardless of extension
+        inGttsObj.save(fileName.split(".")[0] + ".wav")
+
+    def readFile(self, fileName):
+        """
+        PURPOSE:
+        """
+        fileContents = []
+        with open(fileName, "r") as inStrm:
+            fileContents = inStrm.readlines()
+            fileContents = "".join(fileContents)
+        return fileContents
 
 
     def callback_log(self, msg):
@@ -179,7 +330,6 @@ class Streamer():
         """
         self.__playWarningSignal = bool(data.data)
 
-
     def __validateSound(self, inSound):
         """
         PURPOSE:
@@ -198,8 +348,6 @@ class Streamer():
         """
         rospy.loginfo("ERROR: MiRoVoice.py: %s " % msg)
         sys.exit(0)
-
-
 
 if __name__ == "__main__":
     soundInterface = Streamer()

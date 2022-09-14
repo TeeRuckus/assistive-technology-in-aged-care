@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import rospy
 from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import Bool, Float32MultiArray
+from std_msgs.msg import Bool, Float32MultiArray, String
 from cv_bridge import CvBridge, CvBridgeError
 import sys
 import os
@@ -83,6 +83,11 @@ class PoseFallen():
         #TODO: play with the queue size and see if you will get  better performance
         self.__fallenPublisher = rospy.Publisher("resident/fallen/", Bool,
                 queue_size=0)
+
+        #TODO Come back and play with the quality of the camera
+        #publisher for camera quality
+        self.__pubCmd = rospy.Publisher(topicBaseName + "/control/command", String, queue_size=0)
+        cmd="frame=180w@15"
 
     @property
     def imageStitcher(self):

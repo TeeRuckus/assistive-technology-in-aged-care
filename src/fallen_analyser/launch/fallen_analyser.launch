@@ -10,6 +10,7 @@
         type="pose_fallen.py"
         name="pose_fallen"
         output="screen"
+        respawn="true"
         launch-prefix="xterm -hold -e" 
     />
 
