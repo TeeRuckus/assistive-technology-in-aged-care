@@ -11,6 +11,7 @@ import speech_recognition as sr
 #offline speech recognition engine 
 from pocketsphinx import LiveSpeech
 import wave, struct
+import playsound as ps
 
 
 NODE_NAME = "MiROVoice"
@@ -34,6 +35,7 @@ MAX_STREAM_MSG_SIZE = (4096 - 48)
 RECORD_TIME = 2
 MIC_SAMPLE_RATE = 20000
 SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
+MIRO_SPEECH_PATH = "/tmp/miroSpeech.wav"
 
 
 
@@ -46,8 +48,7 @@ SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
 #going to hard code the path to the signals which MiRo will require
 HELP_SIGNAL_FILE = "test_signal.mp3"
 #the path of the file which you want to play
-
-HELP_SIGNAL_PATH = "test_signal.mp3"
+HELP_SIGNAL_PATH = "/home/parallels/miroThesisFiles/test_signal.mp3"
 
 BUFFER_STUFF_BYTES = 4000
 MAX_STREAM_MSG_SIZE = (4096 - 48)
@@ -76,9 +77,9 @@ class Streamer():
         #SUBSCRIBERS
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
 
-        #topic = topicBaseName + "/sensors/mics"
-        #rospy.Subscriber(topic, Int16MultiArray,
-                #self.callBackMics, queue_size=5, tcp_nodelay=True)
+        topic = topicBaseName + "/sensors/mics"
+        rospy.Subscriber(topic, Int16MultiArray,
+                self.callBackMics, queue_size=5, tcp_nodelay=True)
 
 
         #PUBLISHERS
@@ -152,6 +153,7 @@ class Streamer():
         """
         fileName = "/tmp/" + inDecodeName  + ".decode"
 
+        """
         #if the decode file is not found, create a new now
         if not os.path.isfile(fileName):
             cmd = "ffmpeg -y -i \"" + path + "\" -f s16le -acodec pcm_s16le -ar 8000 -ac 1 \"" + fileName + "\""
@@ -160,6 +162,15 @@ class Streamer():
             if not os.path.isfile(fileName):
                 rospy.loginfo("failed decode mp3")
                 sys.exit(0)
+        """
+
+        #creating a decode file every time
+        cmd = "ffmpeg -y -i \"" + path + "\" -f s16le -acodec pcm_s16le -ar 8000 -ac 1 \"" + fileName + "\""
+
+        os.system(cmd)
+        if not os.path.isfile(fileName):
+            rospy.loginfo("failed decode mp3")
+            sys.exit(0)
 
         #creating the file to decode the sound from
 
@@ -187,6 +198,8 @@ class Streamer():
         """
         PURPOSE:
         """
+        self.debug("INFILE: " + inFile)
+        self.debug("PATH: " + path)
 
         self.decodeFile(inFile, path)
 
@@ -260,6 +273,7 @@ class Streamer():
 
 
         #recording sound from mics to file 
+        #TODO: You will need to make this a global constant and path
         outputFileName = '/tmp/miroResidentAudio.wav'
         file = wave.open(outputFileName, "wb")
         file.setsampwidth(2)
@@ -277,6 +291,30 @@ class Streamer():
         #closing the file
         file.close()
         print("audio has being saved")
+
+
+    def talkToMiRoOnline(self):
+        """
+        PURPOSE:
+        """
+        #TODO: remember to make this function pass something in
+        voiceRecording = "/tmp/miroResidentAudio.wav"
+        self.saveAudioMics()
+        response = self.listenToResidentOnlineFile(voiceRecording)
+        self.debug(response)
+        tts = self.generateSpeech(response)
+
+        #self.speakComputer(tts, "/tmp/miroResponse.wav")
+
+        #TODO: you will need to remember to pass in a global constant to this variable
+        self.speakMiRo(tts, "/tmp/miroResponse.wav")
+
+        print("I have finished speaking now")
+
+    def talkToMiRoOffline(self):
+        """
+        PURPOSE:
+        """
 
 
 
@@ -363,12 +401,39 @@ class Streamer():
 
         return miroResponse
 
+    def listenToResidentOnlineFile(self, inFile):
+        """
+        PURPOSE:
+        """
+
+        miroResponse = ""
+        r = sr.Recognizer()
+        contents = sr.AudioFile(inFile)
+        exit = False
+
+        while not exit:
+            with contents as source:
+                audio = r.record(source)
+                try:
+                    text = r.recognize_google(audio)
+                except sr.UnknownValueError as err:
+                    print("couldn't hear what you were saying")
+                    #get recording from file again
+                    self.saveAudioMics()
+
+                text = text.split(" ")
+                print(text)
+                miroResponse, exit = self.determineResponse(text)
+
+        return miroResponse
+
     def generateSpeech(self, inSpeech, inLan="en", accent="com.au", speakSlow=False):
         """
         ASSERTION: Will convert the inputted text into a voice
         """
         print("generating speech")
         tts = gTTS(text=inSpeech, lang=inLan, tld=accent, slow=speakSlow)
+
         return tts
 
     def speakComputer(self, inGttsObj, fileName="voice.mp3"):
@@ -383,13 +448,21 @@ class Streamer():
 
         ps.playsound(fileName)
 
-    def speakMiRo(self, inGttsObj):
+    def speakMiRo(self, inGttsObj, savePath):
         """
         PURPOSE:
         """
         #you will want to first generate a speech format in the wav format, and 
         #then you will want to send that to MiRo to actually speak and say what 
         #he wants to say as well
+
+        if inGttsObj:
+            print("creating a wav file ... ")
+            inGttsObj.save(savePath)
+            print("SAVED %s " % savePath)
+
+        #self.speakComputer(inGttsObj, savePath)
+        self.playSound(savePath.split('/')[-1] ,savePath)
 
     def saveMP3(inGttsObj, fileName):
         """
@@ -492,6 +565,14 @@ class Streamer():
         rospy.loginfo("ERROR: MiRoVoice.py: %s " % msg)
         sys.exit(0)
 
+    def debug(self, inTxt):
+        """
+        PURPOSE:
+        """
+        print("=" * 80)
+        print(inTxt)
+        print("=" * 80)
+
 if __name__ == "__main__":
     #determining if MiRo is being ran offline or online
     mode = None
@@ -502,16 +583,10 @@ if __name__ == "__main__":
         print("no argument, running default ...")
 
     soundInterface = Streamer()
-    #soundInterface.playSound(HELP_SIGNAL_FILE)
+    #soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
 
 
-    #this is just saying hello
-    soundInterface.playSound("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
-    #soundInterface.saveAudioMics()
+    #this is just going to give the intro
+    #soundInterface.playSound("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
 
-
-    #we will actually need to let the sound buffer actually fill up with
-    #some bytes
-
-
-
+    soundInterface.talkToMiRoOnline()
