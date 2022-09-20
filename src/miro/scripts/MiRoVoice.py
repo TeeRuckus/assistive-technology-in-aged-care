@@ -16,6 +16,7 @@ import playsound as ps
 
 NODE_NAME = "MiROVoice"
 
+#TODO: Just map this to use the file which has being already saved instead
 MIRO_INTRO ="Hello, I am MiRo. I have seen that you have fallen over. Are you Okay?  Tap me on the head if you're okay otherwise, I can go and get help. If you prefer you can respond with yes or no, or sorry to hear the instructions again."
 
 # amount to keep the buffer stuffed - larger numbers mean
@@ -36,6 +37,9 @@ RECORD_TIME = 2
 MIC_SAMPLE_RATE = 20000
 SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
 MIRO_SPEECH_PATH = "/tmp/miroSpeech.wav"
+MIRO_SPEECH_PATH = "/home/parallels/miroThesisFiles/introduction.wav"
+MIRO_SPEECH_FILE = "miroSpeech.wav"
+
 
 
 
@@ -70,6 +74,7 @@ class Streamer():
         #TODO: come back and play with these variables if you get the correct signals
         self.__playWarningSignal = False
         self.__miroSpeak = False
+        self.__giveIntro = False
         #TODO: I have removed this to allow t record when I want too
         #self.__micBuff = np.zeros((0,4), 'uint16')
         self.__micBuff = None
@@ -81,6 +86,7 @@ class Streamer():
         #SUBSCRIBERS
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
         rospy.Subscriber("resident/miroSpeak/", Bool, self.callBackMiRoSpeak)
+        rospy.Subscriber("resident/miroIntro/", Bool, self.callBackMiroIntro)
 
         #topic = topicBaseName + "/sensors/mics"
         #rospy.Subscriber(topic, Int16MultiArray,
@@ -156,6 +162,16 @@ class Streamer():
         """
 
         return self.__miroSpeak
+
+    @property
+    def giveIntro(self):
+        """
+        IMPORT: None
+        EXPORT: Boolean
+
+        ASSERTION: Returns the giveIntro class field
+        """
+        return self.__giveIntro
 
     def recordSound(self):
         """
@@ -563,9 +579,18 @@ class Streamer():
         IMPORT: None
         EXPORT: None
 
-        PURPOSE: The call back to tell 
+        PURPOSE: The call back to tell miro to speak and to say something
         """
         self.__miroSpeak = bool(data.data)
+
+    def callBackMiroIntro(self, data):
+        """
+        IMPORT: None
+        EXPORT: None
+
+        PURPOSE: The call back to tell miro to introduce himself to the resident
+        """
+        self.__giveIntro = bool(data.data)
 
     def callBackMics(self, msg):
         """
@@ -629,7 +654,6 @@ class Streamer():
 if __name__ == "__main__":
     #TODO: you will need to come back and implement this functionality later
     #determining if MiRo is being ran offline or online
-    """
     mode = None
     try:
         mode = sys.argv[1]
@@ -637,20 +661,13 @@ if __name__ == "__main__":
     except IndexError as err:
         print("no argument, running default ...")
 
-    soundInterface = Streamer()
-    soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
-
-
-    #this is just going to give the intro
-    #soundInterface.playSound("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
-
-    #soundInterface.talkToMiRoOnline()
-    """
 
     soundInterface = Streamer()
     while not rospy.core.is_shutdown():
         if soundInterface.playWarningSignal:
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
+        elif soundInterface.giveIntro:
+            soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time
             print("INSIDE")
@@ -660,4 +677,8 @@ if __name__ == "__main__":
 
         #50 hertz refresh rate
         time.sleep(0.02)
+
+    #disconnecting from the robot when processing is done
+    rospy.on_shutdown(miroRobot.cleanUp)
+    RobotInterface.disconnect
 

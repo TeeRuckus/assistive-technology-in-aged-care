@@ -71,6 +71,11 @@ class MiRoKinematics:
         self.__pubWarningSignal = rospy.Publisher("resident/warningSignal/",
                 Bool, queue_size=0)
 
+        self.__pubMiroSpeak = rospy.Publisher("resident/miroSpeak/", Bool,
+                queue_size=0)
+
+        self.__pubMiroIntro = rospy.Publisher("resident/miroIntro/", Bool,
+                queue_size=0)
 
 
         #TODO: you will add some code here to make sure that the LED lights are switched off
@@ -202,6 +207,15 @@ class MiRoKinematics:
             if self.__fallenState and self.__miroStopped:
                 #you want to turn on the LED lights to a particular color
                 rospy.loginfo_once("Social Interaction MiRO")
+                #TODO: I am currently here at the moment. You have to change this to intro
+                miroSpeak = Bool()
+                miroSpeak.data = True
+                self.__pubMiroIntro.publish(miroSpeak)
+                #we want miro to speak once 
+                #time needed to register the command
+                time.sleep(0.01)
+                miroSpeak.data = False
+                self.__pubMiroIntro.publish(miroSpeak)
 
                 #checking if the resident is okay
                 self.residentOkayHaptic()
@@ -566,9 +580,9 @@ class MiRoKinematics:
         return (int(bright) << 24) | (red << 16) | (green << 8) | blue
 
 if __name__ == "__main__":
-    rospy.loginfo_once("Starting MiRo Kinematics node ...")
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
+    #TODO: write in your report how hard this was to actually implement it in code
     #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
