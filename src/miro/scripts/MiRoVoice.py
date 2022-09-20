@@ -101,10 +101,6 @@ class Streamer():
         self.__pubStartTimer= rospy.Publisher("resident/startTimer/", Bool,
         queue_size=0)
 
-
-
-
-
         self.dataR = 0
         self.data = 0
         self.__bufferSpace = 0
@@ -172,6 +168,7 @@ class Streamer():
 
         PURPOSE:
         """
+
         timer = Bool()
         timer.data = True
         self.__pubStartTimer.publish(timer)
@@ -656,6 +653,7 @@ if __name__ == "__main__":
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
         elif soundInterface.giveIntro:
             soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
+            soundInterface.startFallenTimer()
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time
             print("INSIDE")

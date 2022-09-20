@@ -21,6 +21,10 @@ BUFFER_MAX = 5
 #TODO: you will need to make your own sound directories which will have your own sounds
 HELP_SIGNAL = ""
 
+#TODO: you will need to change this to something like 10 seconds
+#get help after 4 seconds
+HELP_TIMER = 10
+
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
 #TODO: you'll need to transform the use of lists into using arrays for faster access time
@@ -201,12 +205,15 @@ class MiRoKinematics:
                     self.__sensorInfo = None
                     sonarReading = currSensorInfo.sonar.range
 
-                    #if sonarReading <= 0.4:
-                    if sonarReading <= 0.3:
+                    if sonarReading <= 0.4:
                         self.__miroStopped = True
-                        helpTimerStart = time.time()
+                        #helpTimerStart = time.time()
 
                         #starting the timer
+
+            if self.__miroFinishedSpeaking and self.__sensorInfo:
+                helpTimerStart = time.time()
+
 
             #if miro has stopped and the person has fallen, want to approach person
             if self.__fallenState and self.__miroStopped:
@@ -214,19 +221,21 @@ class MiRoKinematics:
                 rospy.loginfo_once("Social Interaction MiRO")
                 #TODO: I am currently here at the moment. You have to change this to intro
                 #TODO: you will have to come back and toggle MiRo's intro
-                miroSpeak = Bool()
+                speakToggle = self.toggleIntro(speakToggle)
 
                 #checking if the resident is okay
                 self.residentOkayHaptic()
 
+                #only start the timer once Miro has finished talking
 
                 #only count the time if the resident is not okay
                 if not(self.__residentOkay) and self.__miroFinishedSpeaking:
                     elapsedHelpTime = time.time() - helpTimerStart
+                    print("CURRENT TIME: %s " % elapsedHelpTime)
 
                 warningSignal = Bool()
                 #waiting for 10 seconds
-                if elapsedHelpTime >= 10 and not(self.__residentOkay):
+                if elapsedHelpTime >= HELP_TIMER and not(self.__residentOkay):
                     rospy.loginfo_once("The resident is NOT okay please help ...")
                     red = np.array([255, 0, 0])
                     self.activateSOSLED(sleepTime, frequency, red, 255)
@@ -257,14 +266,19 @@ class MiRoKinematics:
 
         PURPOSE: To tell MiRo to speak introducer itself only once.
         """
+        miroSpeak = Bool()
+
+        print("IN CONDITION: %s " % inCondition)
         if not inCondition:
             miroSpeak.data = True
             self.__pubMiroIntro.publish(miroSpeak)
-            time.sleep(0.01)
+            time.sleep(0.1)
             miroSpeak.data = False
             self.__pubMiroIntro.publish(miroSpeak)
             #switching this off afterwards, so MiRo doesn't talk again
-            speakToggle = False
+            inCondition = True
+
+        return inCondition
 
     def moveHead2XCoord(self, dx):
         """
