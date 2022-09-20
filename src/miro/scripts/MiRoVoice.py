@@ -67,7 +67,9 @@ class Streamer():
     def __init__(self):
         rospy.init_node(NODE_NAME, anonymous=True)
         #self.__playWarningSignal = False
-        self.__playWarningSignal = True
+        #TODO: come back and play with these variables if you get the correct signals
+        self.__playWarningSignal = False
+        self.__miroSpeak = False
         self.__micBuff = np.zeros((0,4), 'uint16')
         self.__outBuff = None
         
@@ -76,6 +78,7 @@ class Streamer():
 
         #SUBSCRIBERS
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
+        rospy.Subscriber("resident/miroSpeak/", Bool, self.callBackMiRoSpeak)
 
         topic = topicBaseName + "/sensors/mics"
         rospy.Subscriber(topic, Int16MultiArray,
@@ -131,14 +134,26 @@ class Streamer():
         self.__bufferSpace = 0
         self.__bufferTotal = 0
 
-
-
     @property
     def playWarningSignal(self):
         """
-        ASSERTION:
+        IMPORT: None
+        EXPORT: Boolean
+
+        ASSERTION: Returns the playWarningSignal class field
         """
         return self.__playWarningSignal
+
+    @property
+    def miroSpeak(self):
+        """
+        IMPORT: None
+        EXPORT: Boolean
+
+        ASSERTION: Returns the miroSpeak class field
+        """
+
+        return self.__miroSpeak
 
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
@@ -198,13 +213,14 @@ class Streamer():
         """
         PURPOSE:
         """
-        self.debug("INFILE: " + inFile)
-        self.debug("PATH: " + path)
+
 
         self.decodeFile(inFile, path)
 
         count = 0
         exit = False
+
+        #used to stop the stream once the stream of music has finished
         finishedPlaying = False
 
         # safety dropout if receiver not present
@@ -215,45 +231,45 @@ class Streamer():
         while not rospy.core.is_shutdown() and not finishedPlaying:
             #we only want to play the warning signal once we have subscribed
             #from the signal
-            if self.__playWarningSignal:
-                if not os.path.isfile(inFile):
-                    exit = True
-                # if we've received a report
-                if self.__bufferTotal > 0:
-                    # compute amount to send
-                    buffer_rem = self.__bufferTotal - self.__bufferSpace
-                    n_bytes = BUFFER_STUFF_BYTES - buffer_rem
-                    n_bytes = max(n_bytes, 0)
-                    n_bytes = min(n_bytes, MAX_STREAM_MSG_SIZE)
-                    # if amount to send is non-zero
-                    if n_bytes > 0:
-                        msg = Int16MultiArray(data = self.data[self.dataR:self.dataR+n_bytes])
-                        self.pubStream.publish(msg)
-                        self.dataR += n_bytes
-                # break
+            #if self.__playWarningSignal:
+            if not os.path.isfile(inFile):
+                exit = True
+            # if we've received a report
+            if self.__bufferTotal > 0:
+                # compute amount to send
+                buffer_rem = self.__bufferTotal - self.__bufferSpace
+                n_bytes = BUFFER_STUFF_BYTES - buffer_rem
+                n_bytes = max(n_bytes, 0)
+                n_bytes = min(n_bytes, MAX_STREAM_MSG_SIZE)
+                # if amount to send is non-zero
+                if n_bytes > 0:
+                    msg = Int16MultiArray(data = self.data[self.dataR:self.dataR+n_bytes])
+                    self.pubStream.publish(msg)
+                    self.dataR += n_bytes
+            # break
+            if self.dataR >= len(self.data):
+                exit = True
+
+            # report once per second
+            if count == 0:
+                count = 10
+                print ("streaming:", self.dataR, "/", len(self.data), "bytes")
+
                 if self.dataR >= len(self.data):
-                    exit = True
+                    finishedPlaying = True
 
-                # report once per second
-                if count == 0:
-                    count = 10
-                    print ("streaming:", self.dataR, "/", len(self.data), "bytes")
+                # check at those moments if we are making progress, also
+                if dropout_dataR == self.dataR:
+                    if dropout_count == 0:
+                        print ("dropping out because of no progress...")
+                        exit = True 
+                    print ("dropping out in", str(dropout_count) + "...")
+                    dropout_count -= 1
+                else:
+                    dropout_dataR = self.dataR
 
-                    if self.dataR >= len(self.data):
-                        finishedPlaying = True
-
-                    # check at those moments if we are making progress, also
-                    if dropout_dataR == self.dataR:
-                        if dropout_count == 0:
-                            print ("dropping out because of no progress...")
-                            exit = True 
-                        print ("dropping out in", str(dropout_count) + "...")
-                        dropout_count -= 1
-                    else:
-                        dropout_dataR = self.dataR
-
-                # count tenths
-                count -= 1
+            # count tenths
+            count -= 1
             time.sleep(0.1)
 
 
@@ -515,13 +531,30 @@ class Streamer():
 
     def callBackWarningSignal(self, data):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+
+        PURPOSE: The call back to tell whether if MiRO should play a warning
+        signal or not
         """
         self.__playWarningSignal = bool(data.data)
 
+    def callBackMiRoSpeak(self, data):
+        """
+        IMPORT: None
+        EXPORT: None
+
+        PURPOSE: The call back to tell 
+        """
+        self.__miroSpeak = bool(data.data)
+
     def callBackMics(self, msg):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+
+        PURPOSE: The call back to tell whether if MiRo should listen, and 
+        speak to the resident
         """
 
         #if they mics are currently recording
@@ -574,7 +607,9 @@ class Streamer():
         print("=" * 80)
 
 if __name__ == "__main__":
+    #TODO: you will need to come back and implement this functionality later
     #determining if MiRo is being ran offline or online
+    """
     mode = None
     try:
         mode = sys.argv[1]
@@ -583,10 +618,23 @@ if __name__ == "__main__":
         print("no argument, running default ...")
 
     soundInterface = Streamer()
-    #soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
+    soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
 
 
     #this is just going to give the intro
     #soundInterface.playSound("testWav.wav", "/home/parallels/miroThesisFiles/testWav.wav")
 
-    soundInterface.talkToMiRoOnline()
+    #soundInterface.talkToMiRoOnline()
+    """
+
+    soundInterface = Streamer()
+    while not rospy.core.is_shutdown():
+        if soundInterface.playWarningSignal:
+            soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
+        elif soundInterface.miroSpeak:
+            #we want to short circuit operation, we never want both at the same time
+            soundInterface.talkToMiRoOnline()
+
+        #50 hertz refresh rate
+        time.sleep(0.02)
+
