@@ -70,7 +70,9 @@ class Streamer():
         #TODO: come back and play with these variables if you get the correct signals
         self.__playWarningSignal = False
         self.__miroSpeak = False
-        self.__micBuff = np.zeros((0,4), 'uint16')
+        #TODO: I have removed this to allow t record when I want too
+        #self.__micBuff = np.zeros((0,4), 'uint16')
+        self.__micBuff = None
         self.__outBuff = None
         
         # get robot name
@@ -80,9 +82,9 @@ class Streamer():
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
         rospy.Subscriber("resident/miroSpeak/", Bool, self.callBackMiRoSpeak)
 
-        topic = topicBaseName + "/sensors/mics"
-        rospy.Subscriber(topic, Int16MultiArray,
-                self.callBackMics, queue_size=5, tcp_nodelay=True)
+        #topic = topicBaseName + "/sensors/mics"
+        #rospy.Subscriber(topic, Int16MultiArray,
+                #self.callBackMics, queue_size=5, tcp_nodelay=True)
 
 
         #PUBLISHERS
@@ -154,6 +156,16 @@ class Streamer():
         """
 
         return self.__miroSpeak
+
+    def recordSound(self):
+        """
+        """
+        topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
+        #set up what you need to record sound
+        self.__micBuff = np.zeros((0,4), 'uint16')
+        topic = topicBaseName + "/sensors/mics"
+        rospy.Subscriber(topic, Int16MultiArray,
+                self.callBackMics, queue_size=5, tcp_nodelay=True)
 
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
@@ -269,6 +281,7 @@ class Streamer():
                     dropout_dataR = self.dataR
 
             # count tenths
+
             count -= 1
             time.sleep(0.1)
 
@@ -557,6 +570,7 @@ class Streamer():
         speak to the resident
         """
 
+
         #if they mics are currently recording
         if not self.__micBuff is None:
 
@@ -633,6 +647,8 @@ if __name__ == "__main__":
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time
+            print("INSIDE")
+            soundInterface.recordSound()
             soundInterface.talkToMiRoOnline()
 
         #50 hertz refresh rate
