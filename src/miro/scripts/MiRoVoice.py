@@ -87,16 +87,6 @@ class Streamer():
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
         rospy.Subscriber("resident/miroSpeak/", Bool, self.callBackMiRoSpeak)
         rospy.Subscriber("resident/miroIntro/", Bool, self.callBackMiroIntro)
-
-        #topic = topicBaseName + "/sensors/mics"
-        #rospy.Subscriber(topic, Int16MultiArray,
-                #self.callBackMics, queue_size=5, tcp_nodelay=True)
-
-
-        #PUBLISHERS
-        topic = topicBaseName + "/control/stream"
-        self.pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
-
         topic = topicBaseName + "/platform/log"
         self.subLog = rospy.Subscriber(topic, String, self.callback_log, queue_size=5, tcp_nodelay=True)
 
@@ -104,38 +94,16 @@ class Streamer():
         self.subStream = rospy.Subscriber(topic, UInt16MultiArray,
                 self.callback_stream, queue_size=1, tcp_nodelay=True)
 
-        """
-        #loading in the wav file into memory
-        fileName = "/tmp/" + HELP_SIGNAL_FILE + ".decode"
 
-        if not os.path.isfile(fileName):
-            cmd = "ffmpeg -y -i \"" + HELP_SIGNAL_PATH + "\" -f s16le -acodec pcm_s16le -ar 8000 -ac 1 \"" + fileName + "\""
+        #PUBLISHERS
+        topic = topicBaseName + "/control/stream"
+        self.__pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
+        self.__pubStartTimer= rospy.Publisher("resident/startTimer/", Bool,
+        queue_size=0)
 
-            os.system(cmd)
-            if not os.path.isfile(fileName):
-                rospy.loginfo("failed decode mp3")
-                sys.exit(0)
 
-        #creating the file to decode the sound from
 
-        #loading the wave file into the program 
-        dat = self.readBinary(fileName)
-        self.dataR = 0
-        # convert to numpy array
-        dat = np.fromstring(dat, dtype='int16').astype(np.int32)
-        # normalise wav
-        dat = dat.astype(np.float)
-        sc = 32767.0 / np.max(np.abs(dat))
-        dat *= sc
-        dat = dat.astype(np.int16).tolist()
 
-        # store
-        self.data = dat
-
-        # state
-        self.__bufferSpace = 0
-        self.__bufferTotal = 0
-        """
 
         self.dataR = 0
         self.data = 0
@@ -175,6 +143,10 @@ class Streamer():
 
     def recordSound(self):
         """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
         """
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
         #set up what you need to record sound
@@ -185,9 +157,25 @@ class Streamer():
 
     def clearRecording(self):
         """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
         """
         self.__micBuff = None
         self.__outBuff = None
+
+    def startFallenTimer(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        timer = Bool()
+        timer.data = True
+        self.__pubStartTimer.publish(timer)
+
 
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
@@ -278,7 +266,7 @@ class Streamer():
                 # if amount to send is non-zero
                 if n_bytes > 0:
                     msg = Int16MultiArray(data = self.data[self.dataR:self.dataR+n_bytes])
-                    self.pubStream.publish(msg)
+                    self.__pubStream.publish(msg)
                     self.dataR += n_bytes
             # break
             if self.dataR >= len(self.data):

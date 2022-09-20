@@ -34,6 +34,7 @@ class MiRoKinematics:
         #if resident has already fallen, ignore messages from resident/fallen/
         #topic, and initiate the MiRo fallen interaction
         self.__fallenState = False
+        self.__miroFinishedSpeaking = False
         self.__kinHead = JointState()
         self.__kinHead.position = [0.0, math.radians(34.0), 0.0, 0.0]
         self.__startTime = 0.0
@@ -57,6 +58,7 @@ class MiRoKinematics:
 
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
+        rospy.Subscriber("resident/startTimer/", Bool, self.callBackTimer)
 
         #PUBLISHERS
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
@@ -173,8 +175,11 @@ class MiRoKinematics:
         frequency = 1 / 0.02
         helpTimerStart = 0.0
         elapsedTime = 0.0
+        elapsedHelpTime = 0.0
 
         time.sleep(0.02)
+
+        speakToggle = False
 
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
@@ -208,21 +213,15 @@ class MiRoKinematics:
                 #you want to turn on the LED lights to a particular color
                 rospy.loginfo_once("Social Interaction MiRO")
                 #TODO: I am currently here at the moment. You have to change this to intro
+                #TODO: you will have to come back and toggle MiRo's intro
                 miroSpeak = Bool()
-                miroSpeak.data = True
-                self.__pubMiroIntro.publish(miroSpeak)
-                #we want miro to speak once 
-                #time needed to register the command
-                time.sleep(0.01)
-                miroSpeak.data = False
-                self.__pubMiroIntro.publish(miroSpeak)
 
                 #checking if the resident is okay
                 self.residentOkayHaptic()
 
 
                 #only count the time if the resident is not okay
-                if not(self.__residentOkay):
+                if not(self.__residentOkay) and self.__miroFinishedSpeaking:
                     elapsedHelpTime = time.time() - helpTimerStart
 
                 warningSignal = Bool()
@@ -250,6 +249,22 @@ class MiRoKinematics:
 
 
             time.sleep(sleepTime)
+
+    def toggleIntro(self, inCondition):
+        """
+        IMPORT: Boolean
+        EXPORT: NONE
+
+        PURPOSE: To tell MiRo to speak introducer itself only once.
+        """
+        if not inCondition:
+            miroSpeak.data = True
+            self.__pubMiroIntro.publish(miroSpeak)
+            time.sleep(0.01)
+            miroSpeak.data = False
+            self.__pubMiroIntro.publish(miroSpeak)
+            #switching this off afterwards, so MiRo doesn't talk again
+            speakToggle = False
 
     def moveHead2XCoord(self, dx):
         """
@@ -551,6 +566,16 @@ class MiRoKinematics:
 
     def callBackSensorPackage(self, msg):
         self.__sensorInfo = msg
+
+    def callBackTimer(self, data):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        self.__miroFinishedSpeaking = bool(data.data)
+
 
     def callbackKin(self, msg):
         """
