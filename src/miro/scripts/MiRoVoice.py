@@ -167,6 +167,12 @@ class Streamer():
         rospy.Subscriber(topic, Int16MultiArray,
                 self.callBackMics, queue_size=5, tcp_nodelay=True)
 
+    def clearRecording(self):
+        """
+        """
+        self.__micBuff = None
+        self.__outBuff = None
+
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
         """
@@ -650,6 +656,7 @@ if __name__ == "__main__":
             print("INSIDE")
             soundInterface.recordSound()
             soundInterface.talkToMiRoOnline()
+            soundInterface.clearRecording()
 
         #50 hertz refresh rate
         time.sleep(0.02)
