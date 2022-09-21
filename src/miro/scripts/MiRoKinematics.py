@@ -25,6 +25,9 @@ HELP_SIGNAL = ""
 #get help after 4 seconds
 HELP_TIMER = 4
 
+#setting it to 2 minutes for testing purposes 
+HELP_TIMER = 120
+
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
 #TODO: you'll need to transform the use of lists into using arrays for faster access time
@@ -39,6 +42,7 @@ class MiRoKinematics:
         #topic, and initiate the MiRo fallen interaction
         self.__fallenState = False
         self.__miroFinishedSpeaking = False
+        self.__resetTimer = True
         self.__kinHead = JointState()
         self.__kinHead.position = [0.0, math.radians(34.0), 0.0, 0.0]
         self.__startTime = 0.0
@@ -63,6 +67,7 @@ class MiRoKinematics:
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
         rospy.Subscriber("resident/startTimer/", Bool, self.callBackTimer)
+        rospy.Subscriber("resident/resetTimer/", Bool, self.callBackResetTimer)
 
         #PUBLISHERS
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
@@ -212,15 +217,23 @@ class MiRoKinematics:
 
                         #starting the timer
 
-            #if self.__miroFinishedSpeaking and self.__sensorInfo is None:
-
-            if self.__miroFinishedSpeaking and self.__miroStopped:
-                timerToggle = self.toggleBool(timerToggle)
+            #if self.__miroFinishedSpeaking and self.__miroStopped and not timerToggle:
+                #timerToggle = self.toggleBool(timerToggle)
 
             #TODO: I really don't like this way of doing the time. If you can find a more efficient way
-            if not timerToggle:
-                helpTimerStart = time.time()
+            #print("TIMER TOGGLE: %s"  % timerToggle)
+
+            #COUPLE THIS WITH THE MIROFINISHEDSPEAKING VARIABLE
+            #if not timerToggle and self.__resetTimer:
+            #if self.__resetTimer:
+                #print("START TIMER PARTNER")
+                #helpTimerStart = time.time()
                 #toggle the time back to false
+
+            print("STATUS: %s " % self.__miroFinishedSpeaking)
+            if not self.__miroFinishedSpeaking:
+                print("START TIMER PARTNER")
+                helpTimerStart = time.time()
 
 
             #if miro has stopped and the person has fallen, want to approach person
@@ -292,11 +305,18 @@ class MiRoKinematics:
         IMPORT: BOOLEAN
         EXPORT: BOOLEAN
 
-        PURPOSE: To toggle a boolean variable from false to true, and it will
-        keep the variables as true.
+        PURPOSE:
         """
 
+        """
         if not inBool:
+            inBool = True
+        return inBool
+        """
+
+        if inBool:
+            inBool = False
+        else:
             inBool = True
         return inBool
 
@@ -609,6 +629,16 @@ class MiRoKinematics:
         PURPOSE:
         """
         self.__miroFinishedSpeaking = bool(data.data)
+
+    def callBackResetTimer(self, data):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        self.__resetTimer = bool(data.data)
+
 
 
     def callbackKin(self, msg):

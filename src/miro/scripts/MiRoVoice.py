@@ -100,6 +100,8 @@ class Streamer():
         self.__pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
         self.__pubStartTimer= rospy.Publisher("resident/startTimer/", Bool,
         queue_size=0)
+        self.__pubResetTimer = rospy.Publisher("resident/resetTimer/", Bool,
+                queue_size=0)
 
         self.dataR = 0
         self.data = 0
@@ -137,6 +139,18 @@ class Streamer():
         """
         return self.__giveIntro
 
+    @giveIntro.setter
+    def giveIntro(self, inArg):
+        #TODO: yo will need to do some validation on this afterwards
+        self.__giveIntro = inArg
+
+    @playWarningSignal.setter
+    def playWarningSignal(self, inSound):
+        """
+        ASSERTION:
+        """
+        self.__playWarningSignal = self.__validateSound(inSound)
+
     def recordSound(self):
         """
         IMPORT:
@@ -173,13 +187,21 @@ class Streamer():
         timer.data = True
         self.__pubStartTimer.publish(timer)
 
+    def resetTimer(self):
+        """
+        IMPORT:
+        EXPORT:
 
-    @playWarningSignal.setter
-    def playWarningSignal(self, inSound):
+        PURPOSE:
         """
-        ASSERTION:
-        """
-        self.__playWarningSignal = self.__validateSound(inSound)
+
+        timer = Bool()
+        #timer.data = True
+        timer.data = False
+        #self.__pubResetTimer.publish(timer)
+        self.__pubStartTimer.publish(timer)
+
+
 
     def decodeFile(self, inDecodeName, path):
         """
@@ -248,9 +270,9 @@ class Streamer():
 
         # loop
         while not rospy.core.is_shutdown() and not finishedPlaying:
-            #we only want to play the warning signal once we have subscribed
-            #from the signal
-            #if self.__playWarningSignal:
+
+            self.resetTimer()
+
             if not os.path.isfile(inFile):
                 exit = True
             # if we've received a report
@@ -650,15 +672,18 @@ if __name__ == "__main__":
     soundInterface = Streamer()
     while not rospy.core.is_shutdown():
         if soundInterface.playWarningSignal:
+            #TODO: make changes to the give intro section 
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
         elif soundInterface.giveIntro:
             #TODO: unstub this so you can get miro to actually talk properly 
-            print(" HEY, my name is Miro mate")
-            time.sleep(3)
-            #soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
+            #print(" HEY, my name is Miro mate")
+            #time.sleep(3)
+            soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
             soundInterface.startFallenTimer()
+            soundInterface.giveIntro = False
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time
+            #TODO: make changes the same as the given intro section as well
             print("INSIDE")
             soundInterface.recordSound()
             soundInterface.talkToMiRoOnline()
