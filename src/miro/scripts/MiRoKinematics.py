@@ -42,7 +42,6 @@ class MiRoKinematics:
         #topic, and initiate the MiRo fallen interaction
         self.__fallenState = False
         self.__miroFinishedSpeaking = False
-        self.__resetTimer = True
         self.__kinHead = JointState()
         self.__kinHead.position = [0.0, math.radians(34.0), 0.0, 0.0]
         self.__startTime = 0.0
@@ -67,7 +66,6 @@ class MiRoKinematics:
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
         rospy.Subscriber("resident/startTimer/", Bool, self.callBackTimer)
-        rospy.Subscriber("resident/resetTimer/", Bool, self.callBackResetTimer)
 
         #PUBLISHERS
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
@@ -189,7 +187,6 @@ class MiRoKinematics:
         time.sleep(0.02)
 
         speakToggle = False
-        timerToggle = False
 
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
@@ -216,19 +213,6 @@ class MiRoKinematics:
                         #helpTimerStart = time.time()
 
                         #starting the timer
-
-            #if self.__miroFinishedSpeaking and self.__miroStopped and not timerToggle:
-                #timerToggle = self.toggleBool(timerToggle)
-
-            #TODO: I really don't like this way of doing the time. If you can find a more efficient way
-            #print("TIMER TOGGLE: %s"  % timerToggle)
-
-            #COUPLE THIS WITH THE MIROFINISHEDSPEAKING VARIABLE
-            #if not timerToggle and self.__resetTimer:
-            #if self.__resetTimer:
-                #print("START TIMER PARTNER")
-                #helpTimerStart = time.time()
-                #toggle the time back to false
 
             print("STATUS: %s " % self.__miroFinishedSpeaking)
             if not self.__miroFinishedSpeaking:
@@ -299,26 +283,6 @@ class MiRoKinematics:
             inCondition = True
 
         return inCondition
-
-    def toggleBool(self, inBool):
-        """
-        IMPORT: BOOLEAN
-        EXPORT: BOOLEAN
-
-        PURPOSE:
-        """
-
-        """
-        if not inBool:
-            inBool = True
-        return inBool
-        """
-
-        if inBool:
-            inBool = False
-        else:
-            inBool = True
-        return inBool
 
     def moveHead2XCoord(self, dx):
         """
@@ -629,17 +593,6 @@ class MiRoKinematics:
         PURPOSE:
         """
         self.__miroFinishedSpeaking = bool(data.data)
-
-    def callBackResetTimer(self, data):
-        """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
-        """
-        self.__resetTimer = bool(data.data)
-
-
 
     def callbackKin(self, msg):
         """

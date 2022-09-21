@@ -100,8 +100,6 @@ class Streamer():
         self.__pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
         self.__pubStartTimer= rospy.Publisher("resident/startTimer/", Bool,
         queue_size=0)
-        self.__pubResetTimer = rospy.Publisher("resident/resetTimer/", Bool,
-                queue_size=0)
 
         self.dataR = 0
         self.data = 0
@@ -198,7 +196,6 @@ class Streamer():
         timer = Bool()
         #timer.data = True
         timer.data = False
-        #self.__pubResetTimer.publish(timer)
         self.__pubStartTimer.publish(timer)
 
 
