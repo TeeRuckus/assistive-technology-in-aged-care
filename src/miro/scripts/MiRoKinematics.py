@@ -23,10 +23,10 @@ HELP_SIGNAL = ""
 
 #TODO: you will need to change this to something like 10 seconds
 #get help after 4 seconds
-HELP_TIMER = 4
+HELP_TIMER = 8
 
 #setting it to 2 minutes for testing purposes 
-HELP_TIMER = 120
+#HELP_TIMER = 120
 
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
@@ -85,6 +85,8 @@ class MiRoKinematics:
 
         self.__pubMiroIntro = rospy.Publisher("resident/miroIntro/", Bool,
                 queue_size=0)
+
+
 
 
         #TODO: you will add some code here to make sure that the LED lights are switched off
@@ -228,6 +230,19 @@ class MiRoKinematics:
                 #TODO: you will have to come back and toggle MiRo's intro
                 speakToggle = self.toggleIntro(speakToggle)
 
+                #once MiRo has finished speaking, we want to listen
+
+                #TODO: you will have to make a toggle variable for this, so miro will speak only once
+                if self.__miroFinishedSpeaking:
+                    print("I have finished talking, and now listening")
+                    miroSpeak = Bool()
+                    miroSpeak.data = True
+                    self.__pubMiroSpeak.publish(miroSpeak)
+                    #waiting for this command to actually register
+                    time.sleep(0.1)
+                    miroSpeak.data = False
+                    self.__pubMiroSpeak.publish(miroSpeak)
+
                 #checking if the resident is okay
                 self.residentOkayHaptic()
 
@@ -276,6 +291,7 @@ class MiRoKinematics:
         if not inCondition:
             miroSpeak.data = True
             self.__pubMiroIntro.publish(miroSpeak)
+            #waiting for this command to actually register
             time.sleep(0.1)
             miroSpeak.data = False
             self.__pubMiroIntro.publish(miroSpeak)

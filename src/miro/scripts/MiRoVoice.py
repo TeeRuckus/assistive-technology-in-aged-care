@@ -87,6 +87,7 @@ class Streamer():
         rospy.Subscriber("resident/warningSignal/",Bool,self.callBackWarningSignal)
         rospy.Subscriber("resident/miroSpeak/", Bool, self.callBackMiRoSpeak)
         rospy.Subscriber("resident/miroIntro/", Bool, self.callBackMiroIntro)
+
         topic = topicBaseName + "/platform/log"
         self.subLog = rospy.Subscriber(topic, String, self.callback_log, queue_size=5, tcp_nodelay=True)
 
@@ -137,10 +138,27 @@ class Streamer():
         """
         return self.__giveIntro
 
+
     @giveIntro.setter
     def giveIntro(self, inArg):
         #TODO: yo will need to do some validation on this afterwards
         self.__giveIntro = inArg
+
+
+    @miroSpeak.setter
+    def miroSpeak(self, inArg):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        #TODO: you will need to add validator methods here
+
+        self.__miroSpeak = inArg
+
+
 
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
@@ -596,6 +614,8 @@ class Streamer():
         """
         self.__giveIntro = bool(data.data)
 
+
+
     def callBackMics(self, msg):
         """
         IMPORT: None
@@ -672,19 +692,16 @@ if __name__ == "__main__":
             #TODO: make changes to the give intro section 
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
         elif soundInterface.giveIntro:
-            #TODO: unstub this so you can get miro to actually talk properly 
-            #print(" HEY, my name is Miro mate")
-            #time.sleep(3)
             soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
             soundInterface.startFallenTimer()
             soundInterface.giveIntro = False
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time
-            #TODO: make changes the same as the given intro section as well
-            print("INSIDE")
             soundInterface.recordSound()
             soundInterface.talkToMiRoOnline()
+            soundInterface.startFallenTimer()
             soundInterface.clearRecording()
+            soundInterface.miroSpeak = False
 
         #50 hertz refresh rate
         time.sleep(0.02)
