@@ -652,7 +652,10 @@ if __name__ == "__main__":
         if soundInterface.playWarningSignal:
             soundInterface.playSound(HELP_SIGNAL_FILE, HELP_SIGNAL_PATH)
         elif soundInterface.giveIntro:
-            soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
+            #TODO: unstub this so you can get miro to actually talk properly 
+            print(" HEY, my name is Miro mate")
+            time.sleep(3)
+            #soundInterface.playSound(MIRO_SPEECH_FILE,MIRO_SPEECH_PATH)
             soundInterface.startFallenTimer()
         elif soundInterface.miroSpeak:
             #we want to short circuit operation, we never want both at the same time

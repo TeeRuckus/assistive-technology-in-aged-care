@@ -23,7 +23,7 @@ HELP_SIGNAL = ""
 
 #TODO: you will need to change this to something like 10 seconds
 #get help after 4 seconds
-HELP_TIMER = 10
+HELP_TIMER = 4
 
 #TODO: when you will initialise the package, you'll need to make sure that MiRo's eyelids are going to be open
 #TODO: When the head is being moved, you want to ignore the incoming coordinates from the pose_fallen node
@@ -184,6 +184,7 @@ class MiRoKinematics:
         time.sleep(0.02)
 
         speakToggle = False
+        timerToggle = False
 
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
@@ -211,8 +212,15 @@ class MiRoKinematics:
 
                         #starting the timer
 
-            if self.__miroFinishedSpeaking and self.__sensorInfo:
+            #if self.__miroFinishedSpeaking and self.__sensorInfo is None:
+
+            if self.__miroFinishedSpeaking and self.__miroStopped:
+                timerToggle = self.toggleBool(timerToggle)
+
+            #TODO: I really don't like this way of doing the time. If you can find a more efficient way
+            if not timerToggle:
                 helpTimerStart = time.time()
+                #toggle the time back to false
 
 
             #if miro has stopped and the person has fallen, want to approach person
@@ -268,7 +276,6 @@ class MiRoKinematics:
         """
         miroSpeak = Bool()
 
-        print("IN CONDITION: %s " % inCondition)
         if not inCondition:
             miroSpeak.data = True
             self.__pubMiroIntro.publish(miroSpeak)
@@ -279,6 +286,19 @@ class MiRoKinematics:
             inCondition = True
 
         return inCondition
+
+    def toggleBool(self, inBool):
+        """
+        IMPORT: BOOLEAN
+        EXPORT: BOOLEAN
+
+        PURPOSE: To toggle a boolean variable from false to true, and it will
+        keep the variables as true.
+        """
+
+        if not inBool:
+            inBool = True
+        return inBool
 
     def moveHead2XCoord(self, dx):
         """
