@@ -24,6 +24,7 @@ HELP_SIGNAL = ""
 #TODO: you will need to change this to something like 10 seconds
 #get help after 4 seconds
 HELP_TIMER = 8
+SONAR_MAX = 0.58
 
 #setting it to 2 minutes for testing purposes 
 #HELP_TIMER = 120
@@ -195,12 +196,7 @@ class MiRoKinematics:
         while not rospy.core.is_shutdown():
             if self.__fallenState and not self.__miroStopped:
                 rospy.loginfo_once("Getting to fallen resident...")
-                #activating the wheels to drive forward
-                msgWheels = TwistStamped()
-                #this is the maximum forward speed of MiRo
-                msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
-                msgWheels.twist.angular.z = 0.0
-                self.__pubWheels.publish(msgWheels)
+                self.activateWheels(None)
 
                 #checking if the sonar sensor is close to something
             #if they is some sensor information, we want to determine what to do
@@ -212,7 +208,8 @@ class MiRoKinematics:
                     self.__sensorInfo = None
                     sonarReading = currSensorInfo.sonar.range
 
-                    if sonarReading <= 0.4:
+                    #if sonarReading <= 0.4:
+                    if sonarReading <= SONAR_MAX:
                         self.__miroStopped = True
                         #helpTimerStart = time.time()
 
@@ -464,6 +461,48 @@ class MiRoKinematics:
         msgIllum.data = [0, 0, 0, 0, 0, 0]
         self.pubIllum.publish(msgIllum)
 
+
+    #TODO: come back to this if the PID package didn't work previously
+    def computePID(self, inSonar):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+    def activateWheels(self, controlVar):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        msgWheels = TwistStamped()
+        #this is the maximum forward speed of MiRo
+        msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
+        msgWheels.twist.angular.z = 0.0
+        self.__pubWheels.publish(msgWheels)
+
+
+    def displaySonarReadings(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        if not self.__sensorInfo is None:
+
+            currSensorInfo = self.__sensorInfo
+            self.__sensorInfo = None
+            sonarReading = currSensorInfo.sonar.range
+
+            print("Sonar reading: %s " % sonarReading)
+
+
+
     #TODO: I honestly don't know what this function is actually going to do
     def wiggle(self, v, n, m):
         """
@@ -663,15 +702,16 @@ if __name__ == "__main__":
     #testing if I can control the wheels from here or not 
 
     """
+    #TODO: test your PID controller here, to see its response
     while not rospy.core.is_shutdown():
-        #miroRobot.residentOkayHaptic()
-        miroRobot.turnLEDOn(np.array([255,0,0]), 255)
-        #miroRobot.turnLEDOff()
-        time.sleep(0.02)
+        miroRobot.displaySonarReadings()
     """
 
     #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
 
+
+
+    #getting the sensor reading for MiRo
 
