@@ -1,3 +1,4 @@
+from simple_pid import PID
 import rospy
 import miro2 as miro
 import os
@@ -471,16 +472,17 @@ class MiRoKinematics:
         PURPOSE:
         """
 
-    def activateWheels(self, controlVar):
+    def activateWheels(self, control):
         """
         IMPORT:
         EXPORT:
 
         PURPOSE:
         """
+
         msgWheels = TwistStamped()
         #this is the maximum forward speed of MiRo
-        msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S
+        msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S * control
         msgWheels.twist.angular.z = 0.0
         self.__pubWheels.publish(msgWheels)
 
@@ -493,13 +495,17 @@ class MiRoKinematics:
         PURPOSE:
         """
 
+        sonarReading = None
+
         if not self.__sensorInfo is None:
 
             currSensorInfo = self.__sensorInfo
             self.__sensorInfo = None
             sonarReading = currSensorInfo.sonar.range
 
-            print("Sonar reading: %s " % sonarReading)
+        return sonarReading
+
+
 
 
 
@@ -697,15 +703,37 @@ if __name__ == "__main__":
     #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
-    miroRobot.respondFallen()
+    #miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
-    """
+    pid = PID(-1,0,0, setpoint=0.2)
+    #restraining the outputs between 0 and 1, so we don't blow up motors
+    pid.output_limits = (None,1)
+
+
+    control = 1
     #TODO: test your PID controller here, to see its response
     while not rospy.core.is_shutdown():
-        miroRobot.displaySonarReadings()
-    """
+
+        #assuming that we're going 100% of the speed to begin wit
+        #MESSING AROUND WITH PID CONTROLLER 
+        reading = miroRobot.displaySonarReadings()
+        miroRobot.activateWheels(control)
+
+        if reading:
+            #calculating the new output form the PID according to the systems current value
+            if reading < float("inf"):
+                #print("reading: %s " % reading)
+                #me just trying to understand the control variable a little bit
+                #better for myself
+                control = pid(reading)
+                print("Sonar reading: %s" % reading)
+                print("Control: %s " % control)
+                #print("Control variable: % s" % control)
+
+            #setting up the  PID controller
+            #miroRobot.activateWheels(None)
 
     #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
@@ -713,5 +741,4 @@ if __name__ == "__main__":
 
 
 
-    #getting the sensor reading for MiRo
 
