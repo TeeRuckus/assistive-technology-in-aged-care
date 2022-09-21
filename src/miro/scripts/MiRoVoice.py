@@ -12,6 +12,7 @@ import speech_recognition as sr
 from pocketsphinx import LiveSpeech
 import wave, struct
 import playsound as ps
+from miro2.lib.RobotInterface import RobotInterface
 
 
 NODE_NAME = "MiROVoice"
@@ -101,6 +102,8 @@ class Streamer():
         self.__pubStream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
         self.__pubStartTimer= rospy.Publisher("resident/startTimer/", Bool,
         queue_size=0)
+        self.__pubResidentOkay = rospy.Publisher("resident/residentOkay/",
+                Bool, queue_size=0)
 
         self.dataR = 0
         self.data = 0
@@ -375,14 +378,12 @@ class Streamer():
         self.saveAudioMics()
         response = self.listenToResidentOnlineFile(voiceRecording)
         self.debug(response)
-        tts = self.generateSpeech(response)
+        if response:
+            tts = self.generateSpeech(response)
+            #TODO: you will need to remember to pass in a global constant to this variable
+            self.speakMiRo(tts, "/tmp/miroResponse.wav")
 
-        #self.speakComputer(tts, "/tmp/miroResponse.wav")
-
-        #TODO: you will need to remember to pass in a global constant to this variable
-        self.speakMiRo(tts, "/tmp/miroResponse.wav")
-
-        print("I have finished speaking now")
+            print("I have finished speaking now")
 
     def talkToMiRoOffline(self):
         """
@@ -407,10 +408,17 @@ class Streamer():
                 if word == "YES" or word == "YEAH":
                     print("you said yes")
                     miroResponse = self.responses["YES"]
+                    #telling the kinematics node that the resident is okay
+
+                    okayResponse = Bool()
+                    okayResponse.data = True
+                    self.__pubResidentOkay.publish(okayResponse)
+
                 elif word == "NO" or word == "NAH":
                     print("you said no")
                     miroResponse = self.responses["NO"]
                 elif word == "SORRY":
+                    #TODO: don't generate new speech, have speech take from a saved audio file
                     print("you said sorry")
                     miroResponse = self.responses["SORRY"]
             else:
@@ -466,6 +474,7 @@ class Streamer():
                 try:
                     text = r.recognize_google(audio)
                 except sr.UnknownValueError as err:
+                    #What to do when MiRo couldn't hear anythin
                     print("couldn't hear what you were saying")
 
                 text = text.split(" ")
@@ -479,10 +488,11 @@ class Streamer():
         PURPOSE:
         """
 
-        miroResponse = ""
+        miroResponse = None
         r = sr.Recognizer()
         contents = sr.AudioFile(inFile)
         exit = False
+        text = None
 
         while not exit:
             with contents as source:
@@ -492,11 +502,14 @@ class Streamer():
                 except sr.UnknownValueError as err:
                     print("couldn't hear what you were saying")
                     #get recording from file again
-                    self.saveAudioMics()
+                    #self.saveAudioMics()
+                    #exiting the loop if nothing was heard
+                    exit = True
 
-                text = text.split(" ")
-                print(text)
-                miroResponse, exit = self.determineResponse(text)
+                if text:
+                    text = text.split(" ")
+                    print(text)
+                    miroResponse, exit = self.determineResponse(text)
 
         return miroResponse
 
@@ -707,6 +720,5 @@ if __name__ == "__main__":
         time.sleep(0.02)
 
     #disconnecting from the robot when processing is done
-    rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
 

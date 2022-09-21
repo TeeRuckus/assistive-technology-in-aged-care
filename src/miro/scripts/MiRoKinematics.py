@@ -66,6 +66,8 @@ class MiRoKinematics:
         rospy.Subscriber("resident/fallen/", Bool, self.callBackHasFallen)
         rospy.Subscriber("resident/coords/", coords, self.callbackCoords)
         rospy.Subscriber("resident/startTimer/", Bool, self.callBackTimer)
+        rospy.Subscriber("resident/residentOkay/", Bool,
+                self.callBackResidentOkay)
 
         #PUBLISHERS
         self.pubIllum = rospy.Publisher(topicBaseName + "/control/illum",
@@ -234,7 +236,6 @@ class MiRoKinematics:
 
                 #TODO: you will have to make a toggle variable for this, so miro will speak only once
                 if self.__miroFinishedSpeaking:
-                    print("I have finished talking, and now listening")
                     miroSpeak = Bool()
                     miroSpeak.data = True
                     self.__pubMiroSpeak.publish(miroSpeak)
@@ -263,6 +264,7 @@ class MiRoKinematics:
                     warningSignal.data = True
                     self.__pubWarningSignal.publish(warningSignal)
 
+                print("RESIDENT STATUS: %s " % self.__residentOkay)
                 if self.__residentOkay:
                     #re-setting the timers, and variables used 
                     elapsedTime = 0.0
@@ -271,10 +273,12 @@ class MiRoKinematics:
                     warningSignal.data = False
                     self.__pubWarningSignal.publish(warningSignal)
                     self.turnLEDOff()
+                    sys.exit()
 
-                    if (self.residentOkayHaptic()):
-                        rospy.loginfo("I am switching off now :)")
-                        sys.exit()
+                    #TODO: you will need to figure out a better sequence to this
+                    #if (self.residentOkayHaptic()):
+                        #rospy.loginfo("I am switching off now :)")
+                        #sys.exit()
 
 
             time.sleep(sleepTime)
@@ -609,6 +613,16 @@ class MiRoKinematics:
         PURPOSE:
         """
         self.__miroFinishedSpeaking = bool(data.data)
+
+    def callBackResidentOkay(self, data):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        self.__residentOkay = bool(data.data)
+
 
     def callbackKin(self, msg):
         """
