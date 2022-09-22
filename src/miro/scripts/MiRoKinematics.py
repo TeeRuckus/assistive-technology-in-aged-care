@@ -5,8 +5,10 @@ import os
 import numpy as np
 import math
 import time
+#TODO: confirm if you can achieve the same with the time module as well
+import datetime as dt
 import sys
-
+import csv
 
 from fallen_analyser.msg import coords
 from std_msgs.msg import Float32MultiArray, UInt16MultiArray, UInt32MultiArray
@@ -15,7 +17,6 @@ from geometry_msgs.msg import Twist, TwistStamped
 from sensor_msgs.msg import JointState, Imu
 from Errors import *
 from  miro2.lib.RobotInterface import RobotInterface
-#from enum import Enum
 
 NODE_NAME = "MiRoKinematics"
 BUFFER_MAX = 5
@@ -696,6 +697,36 @@ class MiRoKinematics:
         blue = rgb[2]
         return (int(bright) << 24) | (red << 16) | (green << 8) | blue
 
+def createFile(fileName, inFieldNames):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+    with open(fileName, "w") as outStrm:
+        csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
+        csvWriter.writeheader()
+
+
+def writeInfo(fileName, headers, xData, yData):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    with open(fileName, 'a') as outStream:
+        csvWriter = csv.DictWriter(outStream, fieldnames=headers)
+
+        info = {
+                headers[0] : xData,
+                headers[1] : yData
+            }
+
+        csvWriter.writerow(info)
+
 if __name__ == "__main__":
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
@@ -710,16 +741,25 @@ if __name__ == "__main__":
     pid = PID(-1,0,0, setpoint=0.2)
     #restraining the outputs between 0 and 1, so we don't blow up motors
     pid.output_limits = (None,1)
-
-
     control = 1
-    #TODO: test your PID controller here, to see its response
+    startTime = time.time()
+    reading = 0.0
+    elapsedTime = 0.0
+
+    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
+    headers = ["Time (secs)", "Control variable"]
+    #creating the file to place the data inside of
+    createFile(fileName, headers)
+
+
     while not rospy.core.is_shutdown():
 
         #assuming that we're going 100% of the speed to begin wit
         #MESSING AROUND WITH PID CONTROLLER 
         reading = miroRobot.displaySonarReadings()
-        miroRobot.activateWheels(control)
+
+        #TODO: come  back and tune me, and make me a lot better
+        #miroRobot.activateWheels(control)
 
         if reading:
             #calculating the new output form the PID according to the systems current value
@@ -732,9 +772,15 @@ if __name__ == "__main__":
                 print("Control: %s " % control)
                 #print("Control variable: % s" % control)
 
-            #setting up the  PID controller
-            #miroRobot.activateWheels(None)
 
+        elapsedTime = time.time() - startTime
+        writeInfo(fileName, headers, elapsedTime, control)
+                #I want to write the readings into a csv file
+
+
+        time.sleep(0.02)
+
+    #TODO: you might have to do this on a different thread
     #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
