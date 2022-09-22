@@ -1,52 +1,45 @@
-#TODO: you will need to have a header here explaining what is going on in this file
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import os
 
-#making the plot display look a little bit prettier
-plt.style.use("fivethirtyeight")
-x_vals = []
-y_vals = []
+plt.style.use("ggplot")
 
-#the 
-headers = ["", ""]
+def getCsvFiles(dirName):
+    files = os.listdir(dirName)
+    print(files[1].split(".")[-1])
+    #making sure to only include directories
+    csvFIles = [x for x in files if x.split(".")[-1] == "csv"]
+    print(csvFIles)
 
-
-def animate(i):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-
-    try:
-        #reading in where the csv is storing the data
-        data = pd.read_csv("sonar_pid_control/data.csv")
-    except FileNotFoundError as err:
-        print("Need to create the file and data")
-
-    x = data["Time (secs)"]
-    y = data["Control variable"]
+    return csvFIles
 
 
-    #clearing the plot so we can have smoother data
-    plt.cla()
+#TODO: change the files
+if __name__ == "__main__":
+    #TODO: put into a function called plot PID control variable
+    dirName = "sonar_pid_control/I_tuning/"
+    files = getCsvFiles(dirName)
 
-    plt.plot(x, y)
-    plt.tight_layout()
+    x = []
+    y = []
+    legendList = []
 
-    plt.title("Control variable against time")
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("PID control variable")
-    plt.xticks(rotation=45, ha="right")
+    for ii in files:
+        data = pd.read_csv(dirName + ii)
+        x = data["Time (secs)"]
+        y = data["Control variable"]
+        #labels for the proportional values
+        #plt.plot(x,y, label=ii.split(",")[0][4:])
+        #labels for the derivative of PID controller
+        #plt.plot(x,y, label="P=-3, " + ii.split(",")[2][:-4])
+        #labels for all parameters
+        plt.plot(x,y, label="P=-3, " + ii[4:-4])
+    plt.legend(loc="upper right")
+    plt.xlabel("Time (Secs)")
+    plt.ylabel("PID Control Variable (%)")
+    plt.title("PID Control Variable vs. Time")
+    plt.savefig("Integral Tuning ones firs five")
+    plt.show()
 
-
-#updating a tenth of a second
-
-#creating a 
-ani = FuncAnimation(plt.gcf(),
-        animate,
-        interval=50)
-plt.tight_layout()
-plt.show()
+    #open
+    #reading in all the times from each file
