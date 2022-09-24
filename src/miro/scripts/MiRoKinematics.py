@@ -26,7 +26,7 @@ HELP_SIGNAL = ""
 #TODO: you will need to change this to something like 10 seconds
 #get help after 4 seconds
 HELP_TIMER = 8
-SONAR_MAX = 0.58
+SONAR_MAX = 0.50
 
 #setting it to 2 minutes for testing purposes 
 #HELP_TIMER = 120
@@ -708,7 +708,6 @@ def createFile(fileName, inFieldNames):
         csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
         csvWriter.writeheader()
 
-
 def writeInfo(fileName, headers, xData, yData):
     """
     IMPORT:
@@ -727,6 +726,86 @@ def writeInfo(fileName, headers, xData, yData):
 
         csvWriter.writerow(info)
 
+#breaking up PID stuff into functions, so it will be easier to input into the classes defined above
+
+def generatePID(P=-3, I=0, D=-0.03):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+    pid = PID(P,I,D, setpoint=SONAR_MAX)
+    #restraining the outputs between 0 and 1, so we don't blow up motors
+    pid.output_limits = (0,1)
+
+    return pid
+
+def createRecordDataFile(P, I, D):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+    pidSetting = "P=" + str(P) + ",I=" + str(I) + ",D=" + str(D) + ".csv"
+    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data" + pidSetting
+    headers = ["Time (secs)", "Control variable"]
+    #creating the file to place the data inside of
+    createFile(fileName, headers)
+
+def createLogDataFile():
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    headers = ["Time (secs)", "Control variable"]
+    #fixed location to log data, as accompanying function will read data from here 
+    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
+    createFile(fileName, headers)
+
+def determinePIDControl(pid, reading, prevControl):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    #if we can't determine a new control variable, we want to use previous one
+    control = prevControl
+
+    if reading:
+        #calculating the new output form the PID according to the systems current value
+        if reading < float("inf"):
+            #print("reading: %s " % reading)
+            #me just trying to understand the control variable a little bit
+            #better for myself
+            control = pid(reading)
+            print("Sonar reading: %s" % reading)
+            print("Control: %s " % (control))
+            #print("Control variable: % s" % control)
+
+    return control
+
+def logDataFile(fileName, headers, control, startTime):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+    elapsedTime = time.time() - startTime
+    writeInfo(fileName, headers, elapsedTime, control)
+
+    return elapsedTime
+
+
+
+
 if __name__ == "__main__":
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
@@ -738,44 +817,31 @@ if __name__ == "__main__":
 
     #testing if I can control the wheels from here or not 
 
-    pid = PID(-1,0,0, setpoint=0.2)
-    #restraining the outputs between 0 and 1, so we don't blow up motors
-    pid.output_limits = (None,1)
+    pid = generatePID()
+
+
     control = 1
     startTime = time.time()
     reading = 0.0
     elapsedTime = 0.0
 
+    #createRecordDataFile(-3, 0, -0.03)
+    createLogDataFile()
     fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
     headers = ["Time (secs)", "Control variable"]
-    #creating the file to place the data inside of
-    createFile(fileName, headers)
 
 
     while not rospy.core.is_shutdown():
-
-        #assuming that we're going 100% of the speed to begin wit
-        #MESSING AROUND WITH PID CONTROLLER 
         reading = miroRobot.displaySonarReadings()
+        miroRobot.activateWheels(control)
 
-        #TODO: come  back and tune me, and make me a lot better
-        #miroRobot.activateWheels(control)
+        control = determinePIDControl(pid, reading, control)
+        logDataFile(fileName, headers, control, startTime)
 
-        if reading:
-            #calculating the new output form the PID according to the systems current value
-            if reading < float("inf"):
-                #print("reading: %s " % reading)
-                #me just trying to understand the control variable a little bit
-                #better for myself
-                control = pid(reading)
-                print("Sonar reading: %s" % reading)
-                print("Control: %s " % control)
-                #print("Control variable: % s" % control)
-
-
-        elapsedTime = time.time() - startTime
-        writeInfo(fileName, headers, elapsedTime, control)
-                #I want to write the readings into a csv file
+        #allowing experiment to only run for 3 seconds to allow the results t be fair
+        #limiting the test to 10 seconds to keep it fair
+        #if elapsedTime >= 10:
+            #sys.exit()
 
 
         time.sleep(0.02)
@@ -784,7 +850,3 @@ if __name__ == "__main__":
     #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
-
-
-
-
