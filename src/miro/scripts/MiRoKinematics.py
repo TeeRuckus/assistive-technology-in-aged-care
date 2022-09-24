@@ -100,6 +100,27 @@ class MiRoKinematics:
     def verbose(self):
         return self.__verbose
 
+    #TODO: you will need to make this consistent with all the accessors
+    def getSonarReadings(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        sonarReading = None
+
+        if not self.__sensorInfo is None:
+
+            currSensorInfo = self.__sensorInfo
+            #clearing sensor information not to clutter memory and 
+            #get convoluted readings
+            self.__sensorInfo = None
+            sonarReading = currSensorInfo.sonar.range
+
+        return sonarReading
+
     @verbose.setter
     def verbose(self, newVerbose):
         self.__verbose = self.__validateVerbose(newVerbose)
@@ -191,29 +212,43 @@ class MiRoKinematics:
         elapsedTime = 0.0
         elapsedHelpTime = 0.0
 
+        #initial variables associated with the PID controller for the drive sub-system
+        control = 1
+        startTime = time.time()
+        elapsedTime = 0.0
+        reading = 0.0
+
+        #creating a log file, so we can observe how MiRo stops
+        self.createLogDataFile()
+        fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
+        headers = ["Time (secs)", "Control variable"]
+
+        pid = self.generatePID()
+        #TODO: do you really need this sleep timer here at all?
         time.sleep(0.02)
 
         speakToggle = False
 
         while not rospy.core.is_shutdown():
+            #when resident has fallen over
+            self.logDataFile(fileName, headers, control, startTime)
             if self.__fallenState and not self.__miroStopped:
                 rospy.loginfo_once("Getting to fallen resident...")
-                self.activateWheels(None)
-
                 #checking if the sonar sensor is close to something
             #if they is some sensor information, we want to determine what to do
-                if not self.__sensorInfo is None:
+                sonarReading = self.getSonarReadings()
+                self.activateWheels(control)
+                control = self.determinePIDControl(pid, sonarReading, control)
+                #self.logDataFile(fileName, headers, control, startTime)
 
-                    currSensorInfo = self.__sensorInfo
-                    #clearing sensor information not to clutter memory and 
-                    #get convoluted readings
-                    self.__sensorInfo = None
-                    sonarReading = currSensorInfo.sonar.range
+                #if sonarReading <= 0.4:
+               # if sonarReading <= SONAR_MAX:
 
-                    #if sonarReading <= 0.4:
-                    if sonarReading <= SONAR_MAX:
-                        self.__miroStopped = True
-                        #helpTimerStart = time.time()
+                #when PID control has reached the set point
+                if control == 0:
+                    print("YES I AM inside")
+                    self.__miroStopped = True
+                    #helpTimerStart = time.time()
 
                         #starting the timer
 
@@ -463,15 +498,111 @@ class MiRoKinematics:
         msgIllum.data = [0, 0, 0, 0, 0, 0]
         self.pubIllum.publish(msgIllum)
 
-
-    #TODO: come back to this if the PID package didn't work previously
-    def computePID(self, inSonar):
+    def createFile(self, fileName, inFieldNames):
         """
         IMPORT:
         EXPORT:
 
         PURPOSE:
         """
+        with open(fileName, "w") as outStrm:
+            csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
+            csvWriter.writeheader()
+
+    def writeInfo(self, fileName, headers, xData, yData):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        with open(fileName, 'a') as outStream:
+            csvWriter = csv.DictWriter(outStream, fieldnames=headers)
+
+            info = {
+                    headers[0] : xData,
+                    headers[1] : yData
+                }
+
+            csvWriter.writerow(info)
+
+    #breaking up PID stuff into functions, so it will be easier to input into the classes defined above
+
+    def generatePID(self, P=-3, I=0, D=-0.03):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        pid = PID(P,I,D, setpoint=SONAR_MAX)
+        #restraining the outputs between 0 and 1, so we don't blow up motors
+        pid.output_limits = (0,1)
+
+        return pid
+
+    def createRecordDataFile(self, P, I, D):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        pidSetting = "P=" + str(P) + ",I=" + str(I) + ",D=" + str(D) + ".csv"
+        fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data" + pidSetting
+        headers = ["Time (secs)", "Control variable"]
+        #creating the file to place the data inside of
+        createFile(fileName, headers)
+
+    def createLogDataFile(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        headers = ["Time (secs)", "Control variable"]
+        #fixed location to log data, as accompanying function will read data from here 
+        fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
+        self.createFile(fileName, headers)
+
+    def determinePIDControl(self, pid, reading, prevControl):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        #if we can't determine a new control variable, we want to use previous one
+        control = prevControl
+
+        if reading:
+            #calculating the new output form the PID according to the systems current value
+            if reading < float("inf"):
+                #print("reading: %s " % reading)
+                #me just trying to understand the control variable a little bit
+                #better for myself
+                control = pid(reading)
+                print("Sonar reading: %s" % reading)
+                print("Control: %s " % (control))
+                #print("Control variable: % s" % control)
+
+        return control
+
+    def logDataFile(self, fileName, headers, control, startTime):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        elapsedTime = time.time() - startTime
+        self.writeInfo(fileName, headers, elapsedTime, control)
+
+        return elapsedTime
 
     def activateWheels(self, control):
         """
@@ -486,29 +617,6 @@ class MiRoKinematics:
         msgWheels.twist.linear.x = miro.constants.WHEEL_MAX_SPEED_M_PER_S * control
         msgWheels.twist.angular.z = 0.0
         self.__pubWheels.publish(msgWheels)
-
-
-    def displaySonarReadings(self):
-        """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
-        """
-
-        sonarReading = None
-
-        if not self.__sensorInfo is None:
-
-            currSensorInfo = self.__sensorInfo
-            self.__sensorInfo = None
-            sonarReading = currSensorInfo.sonar.range
-
-        return sonarReading
-
-
-
-
 
     #TODO: I honestly don't know what this function is actually going to do
     def wiggle(self, v, n, m):
@@ -697,111 +805,6 @@ class MiRoKinematics:
         blue = rgb[2]
         return (int(bright) << 24) | (red << 16) | (green << 8) | blue
 
-def createFile(fileName, inFieldNames):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-    with open(fileName, "w") as outStrm:
-        csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
-        csvWriter.writeheader()
-
-def writeInfo(fileName, headers, xData, yData):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-
-    with open(fileName, 'a') as outStream:
-        csvWriter = csv.DictWriter(outStream, fieldnames=headers)
-
-        info = {
-                headers[0] : xData,
-                headers[1] : yData
-            }
-
-        csvWriter.writerow(info)
-
-#breaking up PID stuff into functions, so it will be easier to input into the classes defined above
-
-def generatePID(P=-3, I=0, D=-0.03):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-    pid = PID(P,I,D, setpoint=SONAR_MAX)
-    #restraining the outputs between 0 and 1, so we don't blow up motors
-    pid.output_limits = (0,1)
-
-    return pid
-
-def createRecordDataFile(P, I, D):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-    pidSetting = "P=" + str(P) + ",I=" + str(I) + ",D=" + str(D) + ".csv"
-    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data" + pidSetting
-    headers = ["Time (secs)", "Control variable"]
-    #creating the file to place the data inside of
-    createFile(fileName, headers)
-
-def createLogDataFile():
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-
-    headers = ["Time (secs)", "Control variable"]
-    #fixed location to log data, as accompanying function will read data from here 
-    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
-    createFile(fileName, headers)
-
-def determinePIDControl(pid, reading, prevControl):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-
-    #if we can't determine a new control variable, we want to use previous one
-    control = prevControl
-
-    if reading:
-        #calculating the new output form the PID according to the systems current value
-        if reading < float("inf"):
-            #print("reading: %s " % reading)
-            #me just trying to understand the control variable a little bit
-            #better for myself
-            control = pid(reading)
-            print("Sonar reading: %s" % reading)
-            print("Control: %s " % (control))
-            #print("Control variable: % s" % control)
-
-    return control
-
-def logDataFile(fileName, headers, control, startTime):
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-    elapsedTime = time.time() - startTime
-    writeInfo(fileName, headers, elapsedTime, control)
-
-    return elapsedTime
 
 
 
@@ -813,10 +816,11 @@ if __name__ == "__main__":
     #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
+    """
     pid = generatePID()
 
 
@@ -832,7 +836,7 @@ if __name__ == "__main__":
 
 
     while not rospy.core.is_shutdown():
-        reading = miroRobot.displaySonarReadings()
+        reading = miroRobot.getSonarReadings()
         miroRobot.activateWheels(control)
 
         control = determinePIDControl(pid, reading, control)
@@ -845,8 +849,7 @@ if __name__ == "__main__":
 
 
         time.sleep(0.02)
+    """
 
-    #TODO: you might have to do this on a different thread
-    #disconnecting from robot
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
