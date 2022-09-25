@@ -9,7 +9,8 @@ import sys
 import os
 from Errors import *
 import time
-from fallen_analyser.msg import coords
+#TODO: you will need to uncomment this, and use it when you're using ROS
+#from fallen_analyser.msg import coords
 import miro2 as miro
 
 
@@ -49,6 +50,9 @@ class PoseFallen():
         self.__rightCamFallen = False
         self.__coordsCamRight = False
 
+        #things for the face detection
+        self.__mpFaceDetection = mp.solutions.face_detection
+
         #subscribing to the required nodes and the data
         if self.__verbose:
             rospy.loginfo("Creating main node %s" % NODE_NAME)
@@ -78,8 +82,9 @@ class PoseFallen():
 
         #PUBLISHERS
 
-        self.__coordsPub = rospy.Publisher("resident/coords/",
-                coords, queue_size=10)
+        #TODO: uncomment this out, this was just for testing purposes
+        #self.__coordsPub = rospy.Publisher("resident/coords/",
+                #coords, queue_size=10)
         #TODO: play with the queue size and see if you will get  better performance
         self.__fallenPublisher = rospy.Publisher("resident/fallen/", Bool,
                 queue_size=0)
@@ -403,6 +408,85 @@ class PoseFallen():
 
         for ii in range(len(outFile)):
             pass
+
+
+    def blurFace(self, img):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        result = None
+        height, width, _ = img.shape
+        with self.__mpFaceDetection.FaceDetection( model_selection=0,
+                min_detection_confidence=0.5) as faceDetection:
+
+
+            #improving performance by marking the image as not writeable to
+            #pass by reference
+            img.flags.writeable = False
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            results = faceDetection.process(img)
+
+            if results:
+                #drawing the face detection annotations on the image
+                if results.detections:
+                    img.flags.writeable = True
+                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+                    bboxes = self.getFaceBoundingBox(results, img.shape)
+
+                    #going through each bounding box which was found
+                    for box in bboxes:
+                        #points used to apply a bounding box mask over image
+                        startPoint = (box[0], box[1])
+                        endPoint = (box[0] + box[2], box[1] + box[3])
+
+                        #creating bask so we can blur or pxelate the image
+                        mask = np.zeros((height, width), np.uint8)
+
+                        #blurring the image
+                        imgCopy = img.copy()
+                        #TODO: you can investigate the impacts of this on performance
+                        imgCopy = cv2.blur(imgCopy, (100, 100))
+                        cv2.rectangle(mask, startPoint, endPoint, 255, -1)
+                        masked = cv2.bitwise_and(imgCopy, imgCopy, mask=mask)
+
+                        #extract background
+                        bgMask = cv2.bitwise_not(mask)
+                        bg = cv2.bitwise_and(img, img, mask=bgMask)
+
+                        #returning the blurred image to the user
+                        retImage = cv2.add(bg, masked)
+                #if we didn't detect anything just return original image
+                else:
+                    retImage = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        return results, retImage
+
+    def getFaceBoundingBox(self, results, imgShape):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        bboxes = []
+        imgHeight, imgWidth, _ = imgShape
+
+        #we want to go through each face which was found in the image and get the bounding box
+        for detection in results.detections:
+            bboxFeatures = detection.location_data.relative_bounding_box
+            xmin = int(bboxFeatures.xmin * imgWidth)
+            ymin = int(bboxFeatures.ymin * imgHeight)
+            width = int(bboxFeatures.width * imgWidth)
+            height = int(bboxFeatures.height * imgHeight)
+
+            bboxes.append(np.array([xmin, ymin, width, height], np.int32))
+
+        return bboxes
+
 
     def selectEyeCoords(self, resultsPubL, imgPubL, resultsPubR, imgPubR):
         """

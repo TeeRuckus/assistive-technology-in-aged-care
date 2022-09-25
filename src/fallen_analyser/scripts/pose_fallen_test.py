@@ -9,9 +9,10 @@ def main():
     #getFalseNegativesBbox()
     #getFalseNegativesDistance()
     #testImageBbox()
-    testVideoBbox()
+    #testVideoBbox()
     #testImageDist()
     #testVideoDistance()
+    testVideoBlurring()
 
 
 def testImageBbox():
@@ -76,7 +77,6 @@ def testVideoBbox():
     cap.release()
     cv2.destroyAllWindows()
 
-
 def testImageDist():
     poseFallen = PoseFallen()
     testDataPath = "test_data/SetElderly/"
@@ -139,6 +139,38 @@ def testVideoDistance():
     cap.release()
     cv2.destroyAllWindows()
 
+def testVideoBlurring():
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+    poseFallen = PoseFallen("show")
+    keepOpen = True
+    cap = cv2.VideoCapture(0)
+    while cap.isOpened and keepOpen:
+        _,frame = cap.read()
+
+        _, frame = poseFallen.blurFace(frame)
+
+        cv2.imshow("Video Feed", frame)
+
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            keepOpen = False
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+def testBlurImageData(**kwargs):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+
 def testImageData(**kwargs):
     """
     PURPOSE:This function will test the fallen function given the setElderly
@@ -193,8 +225,6 @@ def testImageData(**kwargs):
             "results/bounding_box_fall_detection/results.csv",
             "results/bounding_box_fall_detection/falseNegativesList.txt")
 
-
-
 def getFalseNegativesDistance():
     """
     """
@@ -213,7 +243,6 @@ def getFalseNegativesDistance():
                 img)
 
         print(success)
-
 
 def getFalseNegativesBbox():
     """
@@ -239,8 +268,6 @@ def getFalseNegativesBbox():
                 img)
 
         print(success)
-
-
 
 def calcPerformance(actualDict, resultsDict, savePath, fnPath):
     """
@@ -305,8 +332,6 @@ def calcPerformance(actualDict, resultsDict, savePath, fnPath):
     writeToFile(savePath, performance)
     writeToFileList(fnPath, falseNegativeList)
 
-
-
 def applyDistanceFallDetection():
     """
     PURPOSE: To test the fall detection method using the distance of the head to 
@@ -334,7 +359,6 @@ def applyDistanceFallDetection():
     writeToFile("results/distance_fall_detection/data.csv", obtainedResults)
 
     return obtainedResults
-
 
 def applyBBoxFallDetection():
     """
@@ -365,7 +389,6 @@ def applyBBoxFallDetection():
 
     return obtainedResults
 
-
 def writeToFile(path, data):
     """
     PURPOSE: To write data which has being stored in a dictionary to a file
@@ -373,7 +396,6 @@ def writeToFile(path, data):
     with open(path, "w") as outStrm:
         for key in data.keys():
             outStrm.write("%s,%s\n"%(key,data[key]))
-
 
 def writeToFileList(path, inList):
     """
@@ -383,7 +405,6 @@ def writeToFileList(path, inList):
     with open(path, "w") as outStrm:
         for item in inList:
             outStrm.write(item + "\n")
-
 
 def readToList(path):
     """
@@ -397,7 +418,6 @@ def readToList(path):
 
 
     return retItems
-
 
 def readToDictonary(path):
     """
@@ -436,22 +456,5 @@ def fallenImage(filePath):
 
     return fallenList
 
-
 if __name__ == "__main__":
     main()
-    """
-    test = {}
-
-    test["Name"] = "Tawana Kwaramba"
-    test["DOB"] = "15/05/2000"
-    test["Job"] = "Academic Seasonal"
-    test["Deadlift"] = "200kg"
-    test["car"] = None
-
-    print("Hello mate")
-    test = dict(filter(lambda ii: ii[1] != None, test.items()))
-
-
-    for key, value in test.items():
-        print("%s %s" %(key, value))
-    """
