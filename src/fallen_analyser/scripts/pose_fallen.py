@@ -286,8 +286,6 @@ class PoseFallen():
             self.__fallenPublisher.publish(fallenStatus)
             self.__fallenCounter = 0
 
-
-
     def callbackCam(self, rosImg, indx):
         """
         PURPOSE: To grab image data from a camera specified by index
@@ -406,7 +404,6 @@ class PoseFallen():
         for ii in range(len(outFile)):
             pass
 
-
     def selectEyeCoords(self, resultsPubL, imgPubL, resultsPubR, imgPubR):
         """
         PURPOSE:
@@ -448,7 +445,6 @@ class PoseFallen():
         if coordsFound and self.__verbose:
             rospy.loginfo("Coordinates: %s %s" % (coordsFound[0],
                 coordsFound[1]))
-
 
     def publishCoords(self, coordsFound):
         """
@@ -654,7 +650,7 @@ class PoseFallen():
         return inMode
 
 #the code of the main loop which is needed for this node
-if __name__ == "__main__": 
+if __name__ == "__main__":
     mode = rospy.get_param("viewMode")
     algo = rospy.get_param("typeAlgo")
     print("Started pose_fallen package ... ")
@@ -671,6 +667,8 @@ if __name__ == "__main__":
         main = PoseFallen(sys.argv[1:])
         main.getVideoFeed()
     #starting the  video feed and analysing if person has fallen in frames
+
+    #trying to implement the blurring of faces onto MiRO
 
 
 

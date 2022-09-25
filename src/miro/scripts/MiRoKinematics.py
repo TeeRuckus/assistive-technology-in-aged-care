@@ -1,3 +1,4 @@
+import statistics as st
 from simple_pid import PID
 import rospy
 import miro2 as miro
@@ -219,9 +220,9 @@ class MiRoKinematics:
         reading = 0.0
 
         #creating a log file, so we can observe how MiRo stops
-        self.createLogDataFile()
         fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
         headers = ["Time (secs)", "Control variable"]
+        self.createFile(fileName, headers)
 
         pid = self.generatePID()
         #TODO: do you really need this sleep timer here at all?
@@ -555,6 +556,7 @@ class MiRoKinematics:
         #creating the file to place the data inside of
         createFile(fileName, headers)
 
+    #TODO: you will need to refactor this so you can change the file name and the headers when you call the function
     def createLogDataFile(self):
         """
         IMPORT:
@@ -592,7 +594,7 @@ class MiRoKinematics:
 
         return control
 
-    def logDataFile(self, fileName, headers, control, startTime):
+    def logDataFile(self, fileName, headers, inX, startTime):
         """
         IMPORT:
         EXPORT:
@@ -600,7 +602,7 @@ class MiRoKinematics:
         PURPOSE:
         """
         elapsedTime = time.time() - startTime
-        self.writeInfo(fileName, headers, elapsedTime, control)
+        self.writeInfo(fileName, headers, elapsedTime, inX)
 
         return elapsedTime
 
@@ -806,7 +808,67 @@ class MiRoKinematics:
         return (int(bright) << 24) | (red << 16) | (green << 8) | blue
 
 
+def SMA(dataPts, newPt):
+    """
+    IMPORT:
+    EXPORT:
 
+    PURPOSE:
+    """
+
+    dataPts = np.roll(dataPts, -1)
+    size = len(dataPts) - 1
+
+    #replacing the last element with new data
+    dataPts[size] = newPt
+    average = np.mean(dataPts)
+
+    return average, dataPts
+
+def medianKernel(dataPts, newPt):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    dataPts = np.roll(dataPts, -1)
+    size = len(dataPts) - 1
+
+    #replacing the last element with new data
+    dataPts[size] = newPt
+    median = np.median(dataPts)
+
+    return median, dataPts
+    #you can us numpy's median function
+
+def modeKernel(dataPts, newPt):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    dataPts = np.roll(dataPts, -1)
+    size = len(dataPts) - 1
+
+    #replacing the last element with new data
+    dataPts[size] = newPt
+    mode = st.mode(dataPts)
+
+    return mode, dataPts
+
+def testSonarSensor():
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    #TODO: you will need to come back to this, and implement it after you have integrated it into your main program
 
 
 if __name__ == "__main__":
@@ -816,40 +878,67 @@ if __name__ == "__main__":
     #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
-    miroRobot.respondFallen()
+    #miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
-    """
-    pid = generatePID()
+    fileNameBase = "/home/parallels/Desktop/Thesis/data/sonar_filtering/"
+    headers = ["Time (secs)", "Sonar Distance (m)"]
 
 
-    control = 1
+    fileName = fileNameBase + "Raw Data.csv"
+    miroRobot.createFile(fileName, headers)
+    #SMA - Simple Moving Average
+    #miroRobot.createFile(fileNameBase + "SMA.csv", headers)
     startTime = time.time()
-    reading = 0.0
-    elapsedTime = 0.0
 
-    #createRecordDataFile(-3, 0, -0.03)
-    createLogDataFile()
-    fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data.csv"
-    headers = ["Time (secs)", "Control variable"]
+    #initialising the kernels to use
 
+    #looking at the last 10 data points
+    kernelSize = 30 # a proof of concept
+    kernel = np.zeros(kernelSize)
+    elapsedTime = 0
 
     while not rospy.core.is_shutdown():
         reading = miroRobot.getSonarReadings()
-        miroRobot.activateWheels(control)
 
-        control = determinePIDControl(pid, reading, control)
-        logDataFile(fileName, headers, control, startTime)
+        """
+        if reading:
+            if reading >= float("inf"):
+                reading = 0
+        else:
+            reading = 0
 
-        #allowing experiment to only run for 3 seconds to allow the results t be fair
-        #limiting the test to 10 seconds to keep it fair
-        #if elapsedTime >= 10:
-            #sys.exit()
+        #filteredReading = SMA(dataPts, reading)
+
+        miroRobot.logDataFile(fileNameBase + "Raw Data.csv",
+                headers,
+                reading,
+                startTime)
+        """
+        miroRobot.activateWheels(1)
+
+        if reading:
+            if reading < float("inf"):
+                #rounded data to 2 decimal place
+                reading = round(reading, 2)
+                #reading = medianKernel(kernel, reading)
+                #reading, kernel = modeKernel(kernel, reading)
+
+                elapsedTime = miroRobot.logDataFile(fileName,
+                        headers,
+                        reading,
+                        startTime)
 
 
+        #only recording data for 10 seconds
+        if elapsedTime >= 3:
+            sys.exit()
+
+
+
+        #time.sleep(0.02)
         time.sleep(0.02)
-    """
 
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect

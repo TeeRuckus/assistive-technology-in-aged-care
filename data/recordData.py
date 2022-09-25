@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 #making the plot display look a little bit prettier
-plt.style.use("fivethirtyeight")
+plt.style.use("ggplot")
 x_vals = []
 y_vals = []
 
@@ -12,7 +12,7 @@ y_vals = []
 headers = ["", ""]
 
 
-def animate(i):
+def animatePID(i):
     """
     IMPORT:
     EXPORT:
@@ -43,10 +43,44 @@ def animate(i):
 
 
 #updating a tenth of a second
+def animateSonar(i):
+    """
+    IMPORT:
+    EXPORT:
 
-#creating a 
+    PURPOSE:
+    """
+
+    dataRaw = pd.read_csv("sonar_filtering/Raw Data.csv")
+    xRaw = dataRaw["Time (secs)"]
+    yRaw = dataRaw["Sonar Distance (m)"]
+
+    #limiting data to the last 50 points
+    #xRaw = xRaw[-150:]
+    #yRaw = yRaw[-150:]
+
+
+    #I want to display last 50 data point
+
+    #clearing the plot so we can have smoother data
+    plt.cla()
+
+    #put other sensor data you want to plot here
+    plt.plot(xRaw, yRaw, label="Raw data")
+
+    plt.title("Sonar Distance Over Time")
+    plt.xlabel("Time (seconds)")
+    plt.ylabel("Distance (m)")
+    plt.legend(loc="upper left")
+    plt.xticks(rotation=45, ha="right")
+
+
+#uncomment for animating PID controller
+#ani = FuncAnimation(plt.gcf(),
+        #animatePID,
+        #interval=50)
+
 ani = FuncAnimation(plt.gcf(),
-        animate,
+        animateSonar,
         interval=50)
-#plt.tight_layout()
 plt.show()

@@ -14,9 +14,7 @@ def getCsvFiles(dirName):
     return csvFIles
 
 
-#TODO: change the files
-if __name__ == "__main__":
-    #TODO: put into a function called plot PID control variable
+def displayPID():
     dirName = "sonar_pid_control/I_tuning/"
     files = getCsvFiles(dirName)
 
@@ -38,8 +36,29 @@ if __name__ == "__main__":
     plt.xlabel("Time (Secs)")
     plt.ylabel("PID Control Variable (%)")
     plt.title("PID Control Variable vs. Time")
-    plt.savefig("Integral Tuning ones firs five")
+    plt.savefig("sonar_pid_control/Integral Tuning ones firs five")
     plt.show()
 
-    #open
-    #reading in all the times from each file
+def displaySonar():
+    dirName = "sonar_filtering/Driving results/SMA/"
+    files = getCsvFiles(dirName)
+
+    x = []
+    y = []
+    legendList = []
+
+    for ii in files:
+        data = pd.read_csv(dirName + ii)
+        x = data["Time (secs)"]
+        y = data["Sonar Distance (m)"]
+        plt.plot(x,y, label=ii[:-4])
+    plt.legend(loc="upper left")
+    plt.xlabel("Time (Secs)")
+    plt.ylabel("Sonar Distance (m)")
+    plt.title("Simple Moving Average Tests")
+    plt.savefig("sonar_filtering/Simple Moving Average Results")
+    plt.show()
+
+#TODO: change the files
+if __name__ == "__main__":
+    displaySonar()
