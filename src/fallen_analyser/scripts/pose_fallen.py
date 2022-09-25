@@ -419,8 +419,9 @@ class PoseFallen():
         """
         result = None
         height, width, _ = img.shape
-        with self.__mpFaceDetection.FaceDetection( model_selection=0,
-                min_detection_confidence=0.5) as faceDetection:
+        #TODO: I have left it on default settings for now, you will need to come back and adjust this for MiRo
+        with self.__mpFaceDetection.FaceDetection( model_selection=1,
+                min_detection_confidence=0.35) as faceDetection:
 
 
             #improving performance by marking the image as not writeable to

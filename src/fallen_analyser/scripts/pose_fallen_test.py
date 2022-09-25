@@ -1,3 +1,4 @@
+import sys
 from pose_fallen import PoseFallen
 import cv2
 import glob
@@ -13,6 +14,7 @@ def main():
     #testImageDist()
     #testVideoDistance()
     testVideoBlurring()
+    #blurTestData()
 
 
 def testImageBbox():
@@ -162,13 +164,29 @@ def testVideoBlurring():
     cap.release()
     cv2.destroyAllWindows()
 
-def testBlurImageData(**kwargs):
+def blurTestData():
     """
     IMPORT:
     EXPORT:
 
     PURPOSE:
     """
+
+    pngFiles = glob.glob(PATH + "*.png")
+    poseFallen = PoseFallen("show")
+
+    for ii in pngFiles:
+        img = cv2.imread(ii)
+
+        _, img = poseFallen.blurFace(img)
+
+        saveLocation = "results/face_blurring/results/" + ii.split("/")[-1]
+        cv2.imwrite(saveLocation, img)
+
+        saveLocationTxt = saveLocation[:-4] + ".txt"
+        #creating empty files which can be manually labelled later
+        with open(saveLocationTxt, "a") as outStrm:
+            outStrm.write("")
 
 
 def testImageData(**kwargs):
