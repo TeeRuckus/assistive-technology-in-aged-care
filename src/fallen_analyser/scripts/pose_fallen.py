@@ -10,7 +10,7 @@ import os
 from Errors import *
 import time
 #TODO: you will need to uncomment this, and use it when you're using ROS
-#from fallen_analyser.msg import coords
+from fallen_analyser.msg import coords
 import miro2 as miro
 
 
@@ -83,8 +83,8 @@ class PoseFallen():
         #PUBLISHERS
 
         #TODO: uncomment this out, this was just for testing purposes
-        #self.__coordsPub = rospy.Publisher("resident/coords/",
-                #coords, queue_size=10)
+        self.__coordsPub = rospy.Publisher("resident/coords/",
+                coords, queue_size=10)
         #TODO: play with the queue size and see if you will get  better performance
         self.__fallenPublisher = rospy.Publisher("resident/fallen/", Bool,
                 queue_size=0)

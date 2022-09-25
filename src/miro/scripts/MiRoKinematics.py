@@ -10,6 +10,9 @@ import time
 import datetime as dt
 import sys
 import csv
+import geocoder
+import ssl
+import smtplib
 
 from fallen_analyser.msg import coords
 from std_msgs.msg import Float32MultiArray, UInt16MultiArray, UInt32MultiArray
@@ -18,6 +21,7 @@ from geometry_msgs.msg import Twist, TwistStamped
 from sensor_msgs.msg import JointState, Imu
 from Errors import *
 from  miro2.lib.RobotInterface import RobotInterface
+from email.message import EmailMessage
 
 NODE_NAME = "MiRoKinematics"
 BUFFER_MAX = 5
@@ -229,6 +233,7 @@ class MiRoKinematics:
         time.sleep(0.02)
 
         speakToggle = False
+        emailSent = False
 
         while not rospy.core.is_shutdown():
             #when resident has fallen over
@@ -298,6 +303,12 @@ class MiRoKinematics:
                     self.getAttention()
                     warningSignal.data = True
                     self.__pubWarningSignal.publish(warningSignal)
+
+                    #ensuring that an e-mail is only sent once 
+                    if not emailSent:
+                        emailSent = True
+                        location = self.getLocation()
+                        self.sendEmail(location)
 
                 print("RESIDENT STATUS: %s " % self.__residentOkay)
                 if self.__residentOkay:
@@ -451,6 +462,68 @@ class MiRoKinematics:
 
         #grabbing the head sensor data
 
+
+    def getLocation(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        g = geocoder.ip('me')
+
+        locInfo = {
+                "latlng" : g.latlng,
+                "post_code" : g.postal,
+                "street" : g.street,
+                "state" : g.state,
+                "country" : g.country,
+                "city" : g.city,
+                "number" : g.housenumber
+                }
+
+        return locInfo
+
+    def sendEmail(self, location):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+
+        emailSender = "consquentimiro@gmail.com"
+        emailPassword = "qahjnpcnmbfqsrrc"
+        #you can put the e-mail address of the age-care here 
+        emailReceiver = "19476700@student.curtin.edu.au"
+
+        #getting the current time of where the resident has fallen
+        currentTime = dt.datetime.now()
+
+        subject = "FALLEN RESIDENT %s %s" % (currentTime.date(),
+                str(currentTime.time()).split(".")[0])
+        body  = "ALERT Resident has fallen over: \n \n" + \
+                "\tLocation: %s " % location["latlng"] + \
+                "\n\t Address: %s %s %s, %s" % (location["number"],
+                        location["street"], location["city"], location["state"]) + \
+                "\n\t Post Code: %s " % location["post_code"] + \
+            "\n \n Kind Regards, \n \n MiRo"
+
+        em = EmailMessage()
+
+        em['From'] = emailSender
+        em['To'] = emailReceiver
+        em['Subject'] = subject
+        em.set_content(body)
+
+        context = ssl.create_default_context()
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+            #logging into the g-mail account
+            smtp.login(emailSender, emailPassword)
+            smtp.sendmail(emailSender, emailReceiver, em.as_string())
     def turnLEDOn(self, rgb, bright):
         """
         PURPOSE
@@ -878,10 +951,13 @@ if __name__ == "__main__":
     #miroRobot.moveHeadCords()
 
     #TODO: you will need to uncomment this, and explore this a little bit later
-    #miroRobot.respondFallen()
+    miroRobot.respondFallen()
 
     #testing if I can control the wheels from here or not 
 
+
+    #TODO: code used for testing the filters for the sonar sensor, make sure to put this in a function later on
+    """
     fileNameBase = "/home/parallels/Desktop/Thesis/data/sonar_filtering/"
     headers = ["Time (secs)", "Sonar Distance (m)"]
 
@@ -902,20 +978,6 @@ if __name__ == "__main__":
     while not rospy.core.is_shutdown():
         reading = miroRobot.getSonarReadings()
 
-        """
-        if reading:
-            if reading >= float("inf"):
-                reading = 0
-        else:
-            reading = 0
-
-        #filteredReading = SMA(dataPts, reading)
-
-        miroRobot.logDataFile(fileNameBase + "Raw Data.csv",
-                headers,
-                reading,
-                startTime)
-        """
         miroRobot.activateWheels(1)
 
         if reading:
@@ -939,6 +1001,7 @@ if __name__ == "__main__":
 
         #time.sleep(0.02)
         time.sleep(0.02)
+        """
 
     rospy.on_shutdown(miroRobot.cleanUp)
     RobotInterface.disconnect
