@@ -92,7 +92,8 @@ class PoseFallen():
         #TODO Come back and play with the quality of the camera
         #publisher for camera quality
         self.__pubCmd = rospy.Publisher(topicBaseName + "/control/command", String, queue_size=0)
-        cmd="frame=180w@15"
+
+
 
     @property
     def imageStitcher(self):
@@ -295,6 +296,11 @@ class PoseFallen():
         """
         PURPOSE: To grab image data from a camera specified by index
         """
+
+        if len(rosImg.data) == 0:
+            print("dropped empty frame")
+            return
+
         try:
             img = self.__imageConverter.compressed_imgmsg_to_cv2(rosImg, "rgb8")
             self.__inputCamera[indx] = img
@@ -332,9 +338,22 @@ class PoseFallen():
         camNames = ['left', 'right', 'stitched']
         #TODO: you will need to do the fallen analyser as well for the pose function, so you can have results for both
 
+        #setting the resolution to view the video from
+
 
         #main loop for getting data from the stereo cameras of MiRo
         while not rospy.core.is_shutdown():
+            #setting the resolution MiRo should be displaying its data
+            #Here is a list of all possible resolutions: Param 2 is the frame rates
+            #1280 x 720: param 1: 720w, param 2: 15
+            #960 x 720: param 1: 720s, param 2: 15 
+            #640 x  360 param 1: 360w, param 2: 15
+            #480 x 360 param 1: 360s, param 2: 15
+            #320 x 240 param 1 240s
+            #320 x 180 param 1: 180w
+            #240 x 180 param 1: 180s
+            cmd  = "frame=720w@15"
+            self.__pubCmd.publish(cmd)
             #if we're required to stitch the images
             if not self.__imageStitcher is None:
                 #performing stitching process of the given images 
