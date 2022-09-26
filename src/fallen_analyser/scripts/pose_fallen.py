@@ -359,8 +359,11 @@ class PoseFallen():
                     #the current image
                     self.__inputCamera[ii] = None
 
+                    #TODO: you can record the video here for MiRo, and not run it in any mode
+
                     #getting results from the current frame
                     results, img = self.findPose(img)
+                    _, img = self.blurFace(img)
 
                     #TODO: You will need to make an algorithm which will get the coordinates where the resident is the closest to the middle of the robot
                     #resultsPub, imgPub = self.findPose(
@@ -408,7 +411,6 @@ class PoseFallen():
 
         for ii in range(len(outFile)):
             pass
-
 
     def blurFace(self, img):
         """
