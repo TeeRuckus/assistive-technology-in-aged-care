@@ -3,7 +3,6 @@
         pkg="miro"
         type="MiRoKinematics.py"
         name="MiRokinematics"
-        required="true"
         output="screen"
     />
 

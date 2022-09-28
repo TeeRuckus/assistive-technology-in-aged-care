@@ -356,7 +356,7 @@ class PoseFallen():
             #320 x 180 param 1: 180w
             #240 x 180 param 1: 180s
             #if we're required to stitch the images
-            cmd  = "frame=720w@15"
+            cmd  = "frame=360w@15"
             self.__pubCmd.publish(cmd)
 
             if not self.__imageStitcher is None:

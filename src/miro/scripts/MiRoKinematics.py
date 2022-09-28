@@ -31,7 +31,9 @@ HELP_SIGNAL = ""
 #TODO: you will need to change this to something like 10 seconds
 #get help after 4 seconds
 HELP_TIMER = 8
-SONAR_MAX = 0.50
+#TODO: the problem with this is because it's too big
+#SONAR_MAX = 0.50
+SONAR_MAX = 0.25
 
 #setting it to 2 minutes for testing purposes 
 #HELP_TIMER = 120
@@ -206,6 +208,23 @@ class MiRoKinematics:
             #time.sleep(0.02)
             time.sleep(0.5)
 
+    def medianKernel(self, dataPts, newPt):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        dataPts = np.roll(dataPts, -1)
+        size = len(dataPts) - 1
+
+        #replacing the last element with new data
+        dataPts[size] = newPt
+        median = np.median(dataPts)
+
+        return median, dataPts
+
     def respondFallen(self):
         """
         PURPOSE:
@@ -235,6 +254,9 @@ class MiRoKinematics:
         speakToggle = False
         emailSent = False
 
+        #code for filtering points on the data 
+        kernel = np.zeros(25)
+
         while not rospy.core.is_shutdown():
             #when resident has fallen over
             self.logDataFile(fileName, headers, control, startTime)
@@ -243,6 +265,10 @@ class MiRoKinematics:
                 #checking if the sonar sensor is close to something
             #if they is some sensor information, we want to determine what to do
                 sonarReading = self.getSonarReadings()
+                #filtering the sonar sensor
+                sonarReading, kernel = self.medianKernel(kernel, sonarReading)
+
+                print("SONAR: %s " % sonarReading)
                 self.activateWheels(control)
                 control = self.determinePIDControl(pid, sonarReading, control)
                 #self.logDataFile(fileName, headers, control, startTime)
@@ -252,15 +278,15 @@ class MiRoKinematics:
 
                 #when PID control has reached the set point
                 if control == 0:
-                    print("YES I AM inside")
+                    #print("YES I AM inside")
                     self.__miroStopped = True
                     #helpTimerStart = time.time()
 
                         #starting the timer
 
-            print("STATUS: %s " % self.__miroFinishedSpeaking)
+            #print("STATUS: %s " % self.__miroFinishedSpeaking)
             if not self.__miroFinishedSpeaking:
-                print("START TIMER PARTNER")
+                #print("START TIMER PARTNER")
                 helpTimerStart = time.time()
 
 
@@ -292,7 +318,7 @@ class MiRoKinematics:
                 #only count the time if the resident is not okay
                 if not(self.__residentOkay) and self.__miroFinishedSpeaking:
                     elapsedHelpTime = time.time() - helpTimerStart
-                    print("CURRENT TIME: %s " % elapsedHelpTime)
+                    #print("CURRENT TIME: %s " % elapsedHelpTime)
 
                 warningSignal = Bool()
                 #waiting for 10 seconds
@@ -310,7 +336,7 @@ class MiRoKinematics:
                         location = self.getLocation()
                         self.sendEmail(location)
 
-                print("RESIDENT STATUS: %s " % self.__residentOkay)
+                #print("RESIDENT STATUS: %s " % self.__residentOkay)
                 if self.__residentOkay:
                     #re-setting the timers, and variables used 
                     elapsedTime = 0.0
