@@ -12,6 +12,7 @@ import time
 #TODO: you will need to uncomment this, and use it when you're using ROS
 from fallen_analyser.msg import coords
 import miro2 as miro
+import glob
 
 
 VISIBILITY_THRESHOLD = 0.4
@@ -22,6 +23,8 @@ VISIBILITY_THRESHOLD = 0.4
 FALEN_DISTANCE_THRESHOLD = 250
 NODE_NAME = "pose_fallen"
 FALLEN_COUNT_THRESHOLD = 6
+SAVE_PATH_L = "/home/parallels/Desktop/Thesis/data/video/raw_frames/left_cam/"
+SAVE_PATH_R = "/home/parallels/Desktop/Thesis/data/video/raw_frames/right_cam/"
 
 
 #TODO: You'll need to test if the conversation with constants have worked here
@@ -92,7 +95,6 @@ class PoseFallen():
         #TODO Come back and play with the quality of the camera
         #publisher for camera quality
         self.__pubCmd = rospy.Publisher(topicBaseName + "/control/command", String, queue_size=0)
-
 
 
     @property
@@ -298,10 +300,11 @@ class PoseFallen():
         """
 
         if len(rosImg.data) == 0:
-            print("dropped empty frame")
+            print("dropped empty camera frame")
             return
 
         try:
+            #converting ros image to raw openCV file 
             img = self.__imageConverter.compressed_imgmsg_to_cv2(rosImg, "rgb8")
             self.__inputCamera[indx] = img
 
@@ -336,13 +339,13 @@ class PoseFallen():
         outCount = [0] * len(outFile)
         t0 = time.time()
         camNames = ['left', 'right', 'stitched']
-        #TODO: you will need to do the fallen analyser as well for the pose function, so you can have results for both
-
-        #setting the resolution to view the video from
+        frameCountRight = 0
+        frameCountLeft = 0
 
 
         #main loop for getting data from the stereo cameras of MiRo
         while not rospy.core.is_shutdown():
+
             #setting the resolution MiRo should be displaying its data
             #Here is a list of all possible resolutions: Param 2 is the frame rates
             #1280 x 720: param 1: 720w, param 2: 15
@@ -352,9 +355,10 @@ class PoseFallen():
             #320 x 240 param 1 240s
             #320 x 180 param 1: 180w
             #240 x 180 param 1: 180s
+            #if we're required to stitch the images
             cmd  = "frame=720w@15"
             self.__pubCmd.publish(cmd)
-            #if we're required to stitch the images
+
             if not self.__imageStitcher is None:
                 #performing stitching process of the given images 
 
@@ -371,35 +375,47 @@ class PoseFallen():
                 #getting the current image
                 img = self.__inputCamera[ii]
 
-                #TODO: make this line more readable
-                #if the image is present
+
+                #ensuring that we actually have an image, and not a dropped frame
                 if not img is None:
                     #clearing the current image, as we're about to process
                     #the current image
                     self.__inputCamera[ii] = None
 
-                    #TODO: you can record the video here for MiRo, and not run it in any mode
+
+                    #code to save each of the individual frames to memory
+#                    temp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#                    if ii == 0:
+#                        frameCountLeft += 1
+#                        cv2.imwrite(SAVE_PATH_L + "img_frame_" + str(frameCountLeft) + ".jpg"
+#                                , temp)
+#                    else:
+#                        frameCountRight += 1
+#                        cv2.imwrite(SAVE_PATH_R + "img_frame_" + str(frameCountRight) + ".jpg"
+#                                , temp)
+
 
                     #getting results from the current frame
                     results, img = self.findPose(img)
+
                     _, img = self.blurFace(img)
 
                     #TODO: You will need to make an algorithm which will get the coordinates where the resident is the closest to the middle of the robot
                     #resultsPub, imgPub = self.findPose(
                             #self.__inputCamera[miro.constants.CAM_R])
 
-                    resultsPubL, imgPubL = self.findPose(
-                            self.__inputCamera[miro.constants.CAM_L])
+                    #TODO: you will need to figure out how to actually make this work
+#                    resultsPubL, imgPubL = self.findPose(
+#                            self.__inputCamera[miro.constants.CAM_L])
+#
+#                    resultsPubR, imgPubR  = self.findPose(
+#                            self.__inputCamera[miro.constants.CAM_R])
+#
+#
+#                    #TODO: you will need to put this mess into a function
+#                    self.selectEyeCoords(resultsPubL, imgPubL, resultsPubR,
+#                            imgPubR)
 
-                    resultsPubR, imgPubR  = self.findPose(
-                            self.__inputCamera[miro.constants.CAM_R])
-
-
-                    #TODO: you will need to put this mess into a function
-                    self.selectEyeCoords(resultsPubL, imgPubL, resultsPubR,
-                            imgPubR)
-
-                    #print("mode, ", self.__mode)
                     if self.__mode == "show":
 
                         #TODO: you will need to move all these things in a function
@@ -430,6 +446,101 @@ class PoseFallen():
 
         for ii in range(len(outFile)):
             pass
+
+    def writeFile(self, fileName, data):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        with open(fileName, "w") as outStrm:
+            outStrm.write(data)
+
+    def testMiRoVariables(self, inPathRight, inPathLeft):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        #the tuning variables on the values I am running the tests on
+
+        trackingConfidence = 0.4
+
+        #the default value for the tracking confidence
+        detectionConfidence = 0.5
+
+        #getting all the jpeg files
+        jpegFilesLeft = glob.glob(inPathLeft + "*.jpg")
+        jpegFilesRight = glob.glob(inPathRight + "*.jpg")
+
+
+
+
+        steps = [ii * 0.1 for ii in range (2, 12, 2)]
+        #limiting the values to one decimal place to correctly match up folders
+        steps = ["%.1f" % ii for ii in steps]
+        for value in steps:
+            lSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/tracking_confidence/" + value + "/"
+            rSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/tracking_confidence/" + value + "/"
+
+            value = float(value)
+
+            self.__dectConf = 0.5
+            self.__trackConf = value
+            print(value)
+            #processing all the left frames
+            #self.processImagesPose(jpegFilesLeft, lSavePath)
+
+            #processing all the right frames
+            self.processImagesPose(jpegFilesRight, rSavePath)
+
+
+
+        #processing all the right frames
+
+    def processImagesPose(self, fileList, savePath):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        ii = 0
+        for imgPath in fileList:
+
+            currImg = cv2.imread(imgPath)
+            imgName = imgPath.split("/")[-1]
+
+            #I am just curious to see the forms which results will take up,
+            #and what it wll be 
+            results, img = self.findPose(currImg)
+            #just annotating the image
+            img, hasFallen = self.showPose(results, img)
+
+            #determining if landmarks were found in the image or not 
+
+            landMarkFound = results.pose_landmarks
+
+            if landMarkFound:
+                #saving the images to the successful folder of the algorithm
+                cv2.imwrite(savePath + imgName, img)
+                self.writeFile(savePath + imgName[:-4] +".txt", "")
+            else:
+                cv2.imwrite(savePath + "/fail/" + imgName, img)
+                self.writeFile(savePath + "/fail/" + imgName[:-4] +".txt", "")
+
+
+            #just having this here for testing purposes
+#            if ii == 3:
+#                sys.exit()
+#
+#            ii += 1
+
 
     def blurFace(self, img):
         """
@@ -508,7 +619,6 @@ class PoseFallen():
             bboxes.append(np.array([xmin, ymin, width, height], np.int32))
 
         return bboxes
-
 
     def selectEyeCoords(self, resultsPubL, imgPubL, resultsPubR, imgPubR):
         """
@@ -757,6 +867,8 @@ class PoseFallen():
 
 #the code of the main loop which is needed for this node
 if __name__ == "__main__":
+    mode = ""
+    algo = ""
     mode = rospy.get_param("viewMode")
     algo = rospy.get_param("typeAlgo")
     print("Started pose_fallen package ... ")
@@ -776,5 +888,6 @@ if __name__ == "__main__":
 
     #trying to implement the blurring of faces onto MiRO
 
-
-
+    #just testing if the testing functions will work for our cases 
+    #main = PoseFallen(["show", "pose"])
+    #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
