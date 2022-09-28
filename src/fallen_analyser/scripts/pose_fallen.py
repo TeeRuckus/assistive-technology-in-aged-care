@@ -977,6 +977,67 @@ class PoseFallen():
 
             csvWriter.writerow(info)
 
+    def testResolutionPerformance(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        loopCounter = 0
+        elapsedTime = 0
+
+        size = "320x180"
+        #performance results save location 
+        fileNameBase = "/home/parallels/Desktop/Thesis/data/video/performance/resolution/"
+
+        fileName = fileNameBase + size + ".csv"
+
+        headers = ["loop step", "time (secs)"]
+
+        self.createFile(fileName, headers)
+
+        fileNameSaved = "/home/parallels/Desktop/Thesis/data/video/pose_detection/resolution_adjustments/left_cam/" + str(size) + "/sampled/"
+
+
+        #getting the images file
+        jpegFiles = glob.glob(fileNameSaved + "*.jpg")
+
+        startTime = time.time()
+        for imgPath in jpegFiles:
+            leftImg = cv2.imread(imgPath)
+            rightImg = cv2.imread(imgPath)
+            #getting the results from the current frame
+            resultsLeft, imgLeft = self.findPose(leftImg)
+            resultsRight, imgRight = self.findPose(rightImg)
+
+            #the blurring algorithm here
+            _, imgLeft = self.blurFace(imgLeft)
+            _, imgRight = self.blurFace(imgRight)
+
+            #pose algorithm
+            imgleft, hasFallenLeft = self.showPose(resultsLeft, imgLeft)
+            imgRight, hasFallenRight = self.showPose(resultsRight, imgRight)
+
+            self.selectFrameFallen(0, True)
+            self.selectFrameFallen(1, False)
+            #changing the color
+            imgLeft = cv2.cvtColor(imgLeft, cv2.COLOR_BGR2RGB)
+            imgRight = cv2.cvtColor(imgRight, cv2.COLOR_BGR2RGB)
+
+            cv2.imshow("Current Left", imgLeft)
+            cv2.imshow("Current Right", imgRight)
+
+            elapsedTime = time.time() - startTime
+            self.writeInfo(fileName, headers, loopCounter, elapsedTime)
+            loopCounter += 1
+
+            time.sleep(0.02)
+
+
+
+
 
 if __name__ == "__main__":
     """
@@ -1006,6 +1067,6 @@ if __name__ == "__main__":
     main = PoseFallen(["show", "pose"])
     #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
     #main.createPerformanceData(SAVE_PATH_L, SAVE_PATH_R)
-
-    main.testResolution()
+    #main.testResolution()
+    main.testResolutionPerformance()
     RobotInterface.disconnect
