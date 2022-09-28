@@ -2,18 +2,18 @@ import mediapipe as mp
 import numpy as np
 import cv2
 import rospy
-from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import Bool, Float32MultiArray, String
-from cv_bridge import CvBridge, CvBridgeError
 import sys
 import os
 from Errors import *
 import time
-#TODO: you will need to uncomment this, and use it when you're using ROS
 from fallen_analyser.msg import coords
 import miro2 as miro
 import glob
 
+from  miro2.lib.RobotInterface import RobotInterface
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Bool, Float32MultiArray, String
+from cv_bridge import CvBridge, CvBridgeError
 
 VISIBILITY_THRESHOLD = 0.4
 #FALEN_DISTANCE_THRESHOLD = 240
@@ -458,90 +458,6 @@ class PoseFallen():
         with open(fileName, "w") as outStrm:
             outStrm.write(data)
 
-    def testMiRoVariables(self, inPathRight, inPathLeft):
-        """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
-        """
-
-        #the tuning variables on the values I am running the tests on
-
-        trackingConfidence = 0.4
-
-        #the default value for the tracking confidence
-        detectionConfidence = 0.5
-
-        #getting all the jpeg files
-        jpegFilesLeft = glob.glob(inPathLeft + "*.jpg")
-        jpegFilesRight = glob.glob(inPathRight + "*.jpg")
-
-
-
-
-        steps = [ii * 0.1 for ii in range (2, 12, 2)]
-        #limiting the values to one decimal place to correctly match up folders
-        steps = ["%.1f" % ii for ii in steps]
-        for value in steps:
-            lSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/tracking_confidence/" + value + "/"
-            rSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/tracking_confidence/" + value + "/"
-
-            value = float(value)
-
-            self.__dectConf = 0.5
-            self.__trackConf = value
-            print(value)
-            #processing all the left frames
-            #self.processImagesPose(jpegFilesLeft, lSavePath)
-
-            #processing all the right frames
-            self.processImagesPose(jpegFilesRight, rSavePath)
-
-
-
-        #processing all the right frames
-
-    def processImagesPose(self, fileList, savePath):
-        """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
-        """
-
-        ii = 0
-        for imgPath in fileList:
-
-            currImg = cv2.imread(imgPath)
-            imgName = imgPath.split("/")[-1]
-
-            #I am just curious to see the forms which results will take up,
-            #and what it wll be 
-            results, img = self.findPose(currImg)
-            #just annotating the image
-            img, hasFallen = self.showPose(results, img)
-
-            #determining if landmarks were found in the image or not 
-
-            landMarkFound = results.pose_landmarks
-
-            if landMarkFound:
-                #saving the images to the successful folder of the algorithm
-                cv2.imwrite(savePath + imgName, img)
-                self.writeFile(savePath + imgName[:-4] +".txt", "")
-            else:
-                cv2.imwrite(savePath + "/fail/" + imgName, img)
-                self.writeFile(savePath + "/fail/" + imgName[:-4] +".txt", "")
-
-
-            #just having this here for testing purposes
-#            if ii == 3:
-#                sys.exit()
-#
-#            ii += 1
-
-
     def blurFace(self, img):
         """
         IMPORT:
@@ -865,8 +781,86 @@ class PoseFallen():
 
         return inMode
 
-#the code of the main loop which is needed for this node
+#--------------METHODS USED FOR TESTING THIS CLASS -----------------------------
+    def testMiRoVariables(self, inPathRight, inPathLeft):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        #the tuning variables on the values I am running the tests on
+
+        trackingConfidence = 0.4
+
+        #the default value for the tracking confidence
+        detectionConfidence = 0.5
+
+        #getting all the jpeg files
+        jpegFilesLeft = glob.glob(inPathLeft + "*.jpg")
+        jpegFilesRight = glob.glob(inPathRight + "*.jpg")
+
+
+
+
+        steps = [ii * 0.1 for ii in range (2, 12, 2)]
+        #limiting the values to one decimal place to correctly match up folders
+        steps = ["%.1f" % ii for ii in steps]
+        for value in steps:
+            lSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/tracking_confidence/" + value + "/"
+            rSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/tracking_confidence/" + value + "/"
+
+            value = float(value)
+
+            self.__dectConf = 0.5
+            self.__trackConf = value
+            print(value)
+            #processing all the left frames
+            self.processImagesPose(jpegFilesLeft, lSavePath)
+
+            #processing all the right frames
+            self.processImagesPose(jpegFilesRight, rSavePath)
+
+
+
+        #processing all the right frames
+
+    def processImagesPose(self, fileList, savePath):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        ii = 0
+        for imgPath in fileList:
+
+            currImg = cv2.imread(imgPath)
+            imgName = imgPath.split("/")[-1]
+
+            #I am just curious to see the forms which results will take up,
+            #and what it wll be 
+            results, img = self.findPose(currImg)
+            #just annotating the image
+            img, hasFallen = self.showPose(results, img)
+
+            #determining if landmarks were found in the image or not 
+
+            landMarkFound = results.pose_landmarks
+
+            if landMarkFound:
+                #saving the images to the successful folder of the algorithm
+                cv2.imwrite(savePath + imgName, img)
+                self.writeFile(savePath + imgName[:-4] +".txt", "")
+            else:
+                cv2.imwrite(savePath + "/fail/" + imgName, img)
+                self.writeFile(savePath + "/fail/" + imgName[:-4] +".txt", "")
+
+
 if __name__ == "__main__":
+    """
     mode = ""
     algo = ""
     mode = rospy.get_param("viewMode")
@@ -887,7 +881,10 @@ if __name__ == "__main__":
     #starting the  video feed and analysing if person has fallen in frames
 
     #trying to implement the blurring of faces onto MiRO
+    """
 
     #just testing if the testing functions will work for our cases 
-    #main = PoseFallen(["show", "pose"])
-    #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
+    main = PoseFallen(["show", "pose"])
+    main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
+
+    RobotInterface.disconnect
