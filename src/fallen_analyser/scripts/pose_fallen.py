@@ -9,6 +9,7 @@ import time
 from fallen_analyser.msg import coords
 import miro2 as miro
 import glob
+import csv
 
 from  miro2.lib.RobotInterface import RobotInterface
 from sensor_msgs.msg import CompressedImage
@@ -324,7 +325,7 @@ class PoseFallen():
         """
         self.callbackCam(rosImg, miro.constants.CAM_R)
 
-    def getVideoFeed(self): 
+    def getVideoFeed(self):
         """
         PURPOSE: Responsible from getting raw video data from the stereo camera 
         of MiRo.
@@ -861,6 +862,96 @@ class PoseFallen():
                 cv2.imwrite(savePath + "/fail/" + imgName, img)
                 self.writeFile(savePath + "/fail/" + imgName[:-4] +".txt", "")
 
+    def createPerformanceData(self, inPathRight, inPathLeft):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        loopCounter = 0
+        elapsedTime = 0
+
+        #performance results file name
+        fileNameBase = "/home/parallels/Desktop/Thesis/data/video/performance/"
+        fileNameRaw = fileNameBase + "rawRead.csv"
+
+        headers = ["loop step", "time (secs)"]
+
+        self.createFile(fileNameRaw, headers)
+        #getting all the image files
+        jpegFilesLeft = glob.glob(inPathLeft + "*.jpg")
+        jpegFilesRight = glob.glob(inPathRight + "*.jpg")
+        startTime = time.time()
+
+        for leftPath, rightPath in zip(jpegFilesLeft, jpegFilesRight):
+
+            leftImg = cv2.imread(leftPath)
+            rightImg = cv2.imread(rightPath)
+
+            #getting the results from the current frame
+            resultsLeft, imgLeft = self.findPose(leftImg)
+            resultsRight, imgRight = self.findPose(rightImg)
+
+
+
+            #the blurring algorithm here
+            _, imgLeft = self.blurFace(imgLeft)
+            _, imgRight = self.blurFace(imgRight)
+
+
+            #pose algorithm
+            imgleft, hasFallenLeft = self.showPose(resultsLeft, imgLeft)
+            imgRight, hasFallenRight = self.showPose(resultsRight, imgRight)
+
+
+            self.selectFrameFallen(0, True)
+            self.selectFrameFallen(1, False)
+
+            imgLeft = cv2.cvtColor(imgLeft, cv2.COLOR_BGR2RGB)
+            imgRight = cv2.cvtColor(imgRight, cv2.COLOR_BGR2RGB)
+
+
+            #changing the color
+            cv2.imshow("Current Left", imgLeft)
+            cv2.imshow("Current Right", imgRight)
+
+            elapsedTime = time.time() - startTime
+            self.writeInfo(fileNameRaw, headers, loopCounter, elapsedTime)
+            loopCounter += 1
+
+
+            time.sleep(0.02)
+
+    def createFile(self, fileName, inFieldNames):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+        with open(fileName, "w") as outStrm:
+            csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
+            csvWriter.writeheader()
+
+    def writeInfo(self, fileName, headers, xData, yData):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        with open(fileName, 'a') as outStream:
+            csvWriter = csv.DictWriter(outStream, fieldnames=headers)
+
+            info = {
+                    headers[0] : xData,
+                    headers[1] : yData
+                }
+
+            csvWriter.writerow(info)
+
 
 if __name__ == "__main__":
     """
@@ -887,7 +978,7 @@ if __name__ == "__main__":
     """
 
     #just testing if the testing functions will work for our cases 
-    #main = PoseFallen(["show", "pose"])
+    main = PoseFallen(["show", "pose"])
     #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
-
+    main.createPerformanceData(SAVE_PATH_L, SAVE_PATH_R)
     RobotInterface.disconnect
