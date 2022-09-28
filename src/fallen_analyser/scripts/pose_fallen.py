@@ -874,7 +874,7 @@ class PoseFallen():
 
         #performance results file name
         fileNameBase = "/home/parallels/Desktop/Thesis/data/video/performance/"
-        fileNameRaw = fileNameBase + "rawRead.csv"
+        fileNameRaw = fileNameBase + "Just fall.csv"
 
         headers = ["loop step", "time (secs)"]
 
@@ -896,8 +896,8 @@ class PoseFallen():
 
 
             #the blurring algorithm here
-            _, imgLeft = self.blurFace(imgLeft)
-            _, imgRight = self.blurFace(imgRight)
+            #_, imgLeft = self.blurFace(imgLeft)
+            #_, imgRight = self.blurFace(imgRight)
 
 
             #pose algorithm
@@ -907,6 +907,7 @@ class PoseFallen():
 
             self.selectFrameFallen(0, True)
             self.selectFrameFallen(1, False)
+
 
             imgLeft = cv2.cvtColor(imgLeft, cv2.COLOR_BGR2RGB)
             imgRight = cv2.cvtColor(imgRight, cv2.COLOR_BGR2RGB)
