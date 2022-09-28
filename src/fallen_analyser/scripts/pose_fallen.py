@@ -862,6 +862,30 @@ class PoseFallen():
                 cv2.imwrite(savePath + "/fail/" + imgName, img)
                 self.writeFile(savePath + "/fail/" + imgName[:-4] +".txt", "")
 
+    def testResolution(self):
+        """
+        IMPORT:
+        EXPORT:
+
+        PURPOSE:
+        """
+
+        #setting the tracking and detection confidence to defaults as 
+        #recommended by the mediapipe documentation
+        lcBase = "/home/parallels/Desktop/Thesis/data/video/pose_detection/resolution_adjustments/left_cam/"
+
+
+        self.__dectConf = 0.5
+        self.__trackConf = 0.5
+
+        resolutions = ["1280x720", "640x360", "320x180"]
+
+        for ii in resolutions:
+            print(ii)
+            sampledFiles = glob.glob(lcBase + ii + "/sampled/" + "*.jpg")
+            savePath = lcBase + ii + "/"
+            self.processImagesPose(sampledFiles, savePath)
+
     def createPerformanceData(self, inPathRight, inPathLeft):
         """
         IMPORT:
@@ -981,5 +1005,7 @@ if __name__ == "__main__":
     #just testing if the testing functions will work for our cases 
     main = PoseFallen(["show", "pose"])
     #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
-    main.createPerformanceData(SAVE_PATH_L, SAVE_PATH_R)
+    #main.createPerformanceData(SAVE_PATH_L, SAVE_PATH_R)
+
+    main.testResolution()
     RobotInterface.disconnect

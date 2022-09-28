@@ -1,8 +1,14 @@
 import glob
+import cv2
+import sys
 
-LEFT_CAM_BASE = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/"
+LEFT_CAM_BASE = "/home/parallels/Desktop/Thesis/data/video/pose_detection/resolution_adjustments/left_cam/"
 
 RIGHT_CAM_BASE = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/"
+
+LEFT_RAW_IMAGES = "/home/parallels/Desktop/Thesis/data/video/raw_frames/left_cam/"
+
+LEFT_CAM_BASE_RES = "/home/parallels/Desktop/Thesis/data/video/pose_detection/resolution_adjustments/left_cam/"
 
 def main():
     """
@@ -11,10 +17,10 @@ def main():
 
     PURPOSE:
     """
-
-    print("hello world")
-
-
+    #to re-sample the images to different sizes
+    #reSampleImages(640, 360)
+    #reSampleImages(320, 180)
+    #preLabelDataRes()
 
 def preLabelData():
     """
@@ -52,6 +58,48 @@ def preLabelData():
 
         writeFile(dtc, "1")
         writeFile(dtcFail, "0")
+
+def preLabelDataRes():
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+    resolutions = ["1280x720", "640x360", "320x180"]
+
+    for ii in resolutions:
+        #grabbing the current files in the directory
+        print(ii)
+        currFiles = glob.glob(LEFT_CAM_BASE_RES + ii + "/" + "*.txt")
+        currFilesFail = glob.glob(LEFT_CAM_BASE + ii + "/fail/" + "*.txt")
+
+
+        writeFile(currFiles, "1")
+        writeFile(currFilesFail, "0")
+
+
+def reSampleImages(width, height):
+    """
+    IMPORT:
+    EXPORT:
+
+    PURPOSE:
+    """
+
+
+    folderName = str(width) + "x" + str(height) + "/sampled/"
+    rawFiles = glob.glob(LEFT_RAW_IMAGES + "*.jpg")
+    dim = (width, height)
+
+
+    ii = 0
+    for imgPath in rawFiles:
+        img = cv2.imread(imgPath)
+        imgName = imgPath.split("/")[-1]
+        resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+        cv2.imwrite(LEFT_CAM_BASE + folderName + imgName, resized)
 
 def writeFile(fileNames, data):
     """
