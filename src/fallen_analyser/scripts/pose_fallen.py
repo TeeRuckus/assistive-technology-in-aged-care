@@ -808,13 +808,16 @@ class PoseFallen():
         #limiting the values to one decimal place to correctly match up folders
         steps = ["%.1f" % ii for ii in steps]
         for value in steps:
-            lSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/tracking_confidence/" + value + "/"
-            rSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/tracking_confidence/" + value + "/"
+            lSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/left_cam/detection_confidence/" + value + "/"
+            rSavePath = "/home/parallels/Desktop/Thesis/data/video/pose_detection/mediapipe_adjustments/right_cam/detection_confidence/" + value + "/"
 
             value = float(value)
 
-            self.__dectConf = 0.5
-            self.__trackConf = value
+            #default detection confidence
+            #self.__dectConf = 0.5
+            #self.__trackConf = value
+            self.__dectConf = value
+            self.__trackConf = 0.5
             print(value)
             #processing all the left frames
             self.processImagesPose(jpegFilesLeft, lSavePath)
@@ -884,7 +887,7 @@ if __name__ == "__main__":
     """
 
     #just testing if the testing functions will work for our cases 
-    main = PoseFallen(["show", "pose"])
-    main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
+    #main = PoseFallen(["show", "pose"])
+    #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
 
     RobotInterface.disconnect
