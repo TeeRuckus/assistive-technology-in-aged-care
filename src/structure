@@ -13,11 +13,14 @@
 │   │   ├── pose_fallen.py
 │   │   ├── pose_fallen_test.py
 │   │   ├── __pycache__
+│   │   │   ├── Errors.cpython-38.pyc
+│   │   │   └── pose_fallen.cpython-38.pyc
 │   │   ├── results
 │   │   │   ├── bounding_box_fall_detection
 │   │   │   │   ├── actualResults.csv
 │   │   │   │   ├── data.csv
 │   │   │   │   ├── False_Negatives
+│   │   │   │   │   ├── [...]
 │   │   │   │   ├── falseNegativesList.txt
 │   │   │   │   └── results.csv
 │   │   │   ├── distance_fall_detection
@@ -26,11 +29,14 @@
 │   │   │   │   ├── data.csv
 │   │   │   │   ├── falseNegativeList.txt
 │   │   │   │   ├── False_Negatives
+│   │   │   │   │   ├── [...]
 │   │   │   │   └── results.csv
 │   │   │   └── face_blurring
 │   │   │       └── results
+│   │   │           ├── [...]
 │   │   └── test_data
 │   │       └── SetElderly
+│   │           ├── [...]
 │   └── src
 ├── miro
 │   ├── CMakeLists.txt
@@ -44,8 +50,6 @@
 │   │   ├── MiRoVoice.py
 │   │   ├── __pycache__
 │   │   │   └── Errors.cpython-38.pyc
-│   │   ├── tags
 │   │   └── test_signal.mp3
 │   └── src
 ├── structure
-└── tags

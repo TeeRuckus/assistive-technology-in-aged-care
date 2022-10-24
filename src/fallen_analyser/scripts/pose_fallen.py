@@ -1040,13 +1040,11 @@ class PoseFallen():
 
 
 if __name__ == "__main__":
-    """
     mode = ""
     algo = ""
     mode = rospy.get_param("viewMode")
     algo = rospy.get_param("typeAlgo")
     print("Started pose_fallen package ... ")
-
 
     if len(mode) != 0:
         print("Using launch file...")
@@ -1060,13 +1058,13 @@ if __name__ == "__main__":
         main.getVideoFeed()
     #starting the  video feed and analysing if person has fallen in frames
 
-    #trying to implement the blurring of faces onto MiRO
-    """
 
     #just testing if the testing functions will work for our cases 
+    """
     main = PoseFallen(["show", "pose"])
     #main.testMiRoVariables(SAVE_PATH_L, SAVE_PATH_R)
     #main.createPerformanceData(SAVE_PATH_L, SAVE_PATH_R)
     #main.testResolution()
     main.testResolutionPerformance()
     RobotInterface.disconnect
+    """
