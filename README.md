@@ -10,7 +10,7 @@
 - **E-MAIL:** T.Tan@curtin.edu.au
 
 ## Purpose
-This set of files is to implement a fall detection algorithm onto the MiRo platform. MiRo wil detect a fallen resident using the stereo cameras, and drive to the fallen resident using the differential drive. The differential drive is supported by a PID controller with the values of P=-2, D=-0.03, and I=0. Once MiRo has stopped in front of the resident, MiRo will verbally ask if the fallen resident is okay, and MiRo will listen for a resident from the resident. If the resident is okay, MiRo will switch off. Otherwise, MiRo will do an emergency dance to attract the attention of the carer's. While doing the dance MiRo will send an email to the aged-care facility. The video demonstration of this software is demonstrated here:https://youtu.be/RGSnkb3LFhY
+This set of files is to implement a fall detection algorithm onto the MiRo platform. MiRo wil detect a fallen resident using the stereo cameras, and drive to the fallen resident using the differential drive. The differential drive is supported by a PID controller with the values of P=-2, D=-0.03, and I=0. Once MiRo has stopped in front of the resident, MiRo will verbally ask if the fallen resident is okay, and MiRo will listen for a resident from the resident. If the resident is okay, MiRo will switch off. Otherwise, MiRo will do an emergency dance to attract the attention of the carer's. While doing the dance MiRo will send an email to the aged-care facility. Communication between pyhon files is done using ROS. The video demonstration of this software is demonstrated here:https://youtu.be/RGSnkb3LFhY
 
 ## Key Features
 - Fall detection using MediaPipe. Fall methods are based on bounding box
@@ -40,3 +40,12 @@ orientation, and or the distance of the nose from the floor.
         - **MiRoKinematics.py**: File responsible for all the kinematics movements of MiRo. Operation of the differential drive system, the use of PID controller, the emergency help dance, physical interaction with resident, and the mailing of teh aged-care facility . 
         - **MiRoVoice.py**: File responsible for all the verbal interaction between the resident, and MiRo. This wll be speaking the set of instructions to the resident, and of MiRo listening to MiRo.
         - **test_signal.mp3**: Warning signal which wll be played when the resident has fallen.
+
+## How to use
+    - Ensure that you have installed all the necessary packages and mdk, as illustrated by the following links
+        - [Installation of ROS Neotic](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_ROS)
+        - [Installation of MiRO MDK](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_MDK)
+    - ensure that you're the most outter layer of project
+    1. Run `catkin_make`
+    2. Run `source devel/setup.bash`
+    3. Run `roslaunch main.launch inModeF:=show inAlgoF:=pose`
