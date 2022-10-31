@@ -1,3 +1,10 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: To handle the computer vision of the MiRo platform. Hence, this class
+is responsible for determining if a resident has fallen over.
+"""
 import mediapipe as mp
 import numpy as np
 import cv2
@@ -33,6 +40,9 @@ SAVE_PATH_R = "/home/parallels/Desktop/Thesis/data/video/raw_frames/right_cam/"
 
 class PoseFallen():
     def __init__(self,args, dectConf=0.1, trackConf=0.1):
+        """
+        The default and alternate constructor of this class
+        """
         self.__mpDrawing = mp.solutions.drawing_utils
         self.__imageStitcher = None
         self.__inputCamera = [None] * 3
@@ -101,6 +111,8 @@ class PoseFallen():
     @property
     def imageStitcher(self):
         """
+        IMPORT: None
+        EXPORT: None
         PURPOSE: A getter for the imageStitcher class field
         """
         return self.__imageStitcher
@@ -108,6 +120,8 @@ class PoseFallen():
     @property
     def mode(self):
         """
+        IMPORT: None
+        EXPORT: None
         PURPOSE: A getter for the mode class field
         """
         return self.__mode
@@ -115,12 +129,16 @@ class PoseFallen():
     @property
     def inputCamera(self):
         """
+        IMPORT: None
+        EXPORT: None
         PURPOSE: A getter for the inputCamera class field
         """
         return self.__inputCamera
 
     def findPose(self, img, draw=True):
         """
+        IMPORT: numpy array, Boolean
+        EXPORT: MediaPipe results, numpy array
         PURPOSE: To implement mediapipe on the found image, and trying
         to find the pose on the found image at the current moment
         """
@@ -146,6 +164,9 @@ class PoseFallen():
 
     def torsoInView(self, results):
         """
+        IMPORT: MediaPipe results object: array
+        EXPORT: Boolean
+        ASSERTION: returns true if the residents torso is in view
         """
         inView = False
 
@@ -168,6 +189,9 @@ class PoseFallen():
 
     def noseHipInView(self, results):
         """
+        IMPORT: MediaPipe results object: array
+        EXPORT: Boolean
+        PURPOSE: To determine if the residents nose and hips is going to be in view
         """
         inView = False
 
@@ -185,7 +209,12 @@ class PoseFallen():
 
     def orientationOfTorso(self, results, imgShape):
         """
-
+        IMPORT: MediaPipe results object: array, tuple
+        EXPORT: Boolean, array
+        PURPOSE: To determine if the resident has fallen using the bounding box 
+        method. The algorithm will get the bounding box formed by the residents 
+        torso, and will return true if the width of the bounding box is going
+        to be greater than the height of the bounding box
         """
         fallen = None
         bbox = []
@@ -226,7 +255,9 @@ class PoseFallen():
 
     def getDistance(self, results, imgShape):
         """
-        PURPOSE: Gets distance of resident between their nose and knees. This
+        IMPORT: MediaPipe results: array, tuple
+        EXPORT: distance between the floor and the resident's nose
+        PURPOSE: Gets distance of resident between their nose and floor. This
         distance is monitored to ensure resident has fallen if, distance below
         programmed threshold the resident has fallen and needs assistance.
         """
@@ -251,6 +282,9 @@ class PoseFallen():
 
     def hasFallenDistance(self, distance):
         """
+        IMPORT: float
+        EXPORT: boolean
+        ASSERTION: returns true if the distance is greater than a threshold
         """
 
         fallen = False
@@ -327,8 +361,11 @@ class PoseFallen():
 
     def getVideoFeed(self):
         """
+        IMPORT: None
+        EXPORT: None
         PURPOSE: Responsible from getting raw video data from the stereo camera 
-        of MiRo.
+        of MiRo, and determining if the resident has fallen. This is the main 
+        loop of the MiRo platform
         """
         # state
         channelsToProcess = [0, 1]
@@ -450,10 +487,9 @@ class PoseFallen():
 
     def writeFile(self, fileName, data):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: string, list 
+        EXPORT: export
+        ASSERTION: writes contents in a list into the file name given 
         """
 
         with open(fileName, "w") as outStrm:
@@ -461,10 +497,9 @@ class PoseFallen():
 
     def blurFace(self, img):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: numpy array (image)
+        EXPORT: MediaPipe results: array, numpy array (image)
+        ASSERTIONS: To blur the residents face in the current frame
         """
         result = None
         height, width, _ = img.shape
@@ -517,10 +552,9 @@ class PoseFallen():
 
     def getFaceBoundingBox(self, results, imgShape):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: MediaPipe results object, tuple
+        EXPORT: bounding box
+        ASSERTONS: returns the bounding box formed by the residents torso
         """
         bboxes = []
         imgHeight, imgWidth, _ = imgShape
@@ -539,7 +573,12 @@ class PoseFallen():
 
     def selectEyeCoords(self, resultsPubL, imgPubL, resultsPubR, imgPubR):
         """
-        PURPOSE:
+        IMPORT: ROS publisher object, ROS publisher object, MediaPipe results object, 
+        MediaPipe results object
+        EXPORT: None
+        ASSERTONS: Returns the coordinates of the residents face which is closer
+        to the centre of MiRo's stereo camera. This will allow for MiRo to 
+        track resident's face while keeping them in the middle of the frames
         """
         noseL = None
         noseR = None
@@ -581,7 +620,9 @@ class PoseFallen():
 
     def publishCoords(self, coordsFound):
         """
-        PURPOSE
+        IMPORT: tuple
+        EXPORT: None
+        ASSERTIONS: publishs the coordinates to appropriate ros topic
         """
         pubCoords = coords()
         #isRightCam = Bool()
@@ -594,7 +635,10 @@ class PoseFallen():
 
     def selectFrameFallen(self, ii, hasFallen):
         """
-        PURPOSE:
+        IMPORT: integer, boolean
+        EXPORT: None
+        ASSERTION: will keep the fall status of the program, as long as one of 
+        the frames will have a fallen resident. 
         """
         if hasFallen:
             self.toggleCameraStatesON(ii)
@@ -604,6 +648,8 @@ class PoseFallen():
 
     def chooseCameraFallen(self, hasFallen):
         """
+        IMPORT: Boolean
+        EXPORT: None
         ASSERTION: the camera which has a fallen resident will be chosen. If
         both of the cameras have a fallen resident, then the algorithm will
         default to also choose the one which has more of the person in its
@@ -627,6 +673,8 @@ class PoseFallen():
 
     def toggleCameraStatesON(self, camIndx):
         """
+        IMPORT: integer
+        EXPORT: None
         ASSERTION: Will turn the leftCamFallen class field to true for an index
         of 0, and it will turn the rightCamFallen class field to true for an
         index of 1
@@ -639,6 +687,8 @@ class PoseFallen():
 
     def toggleCameraStatesOFF(self, camIndx):
         """
+        IMPORT: integer
+        EXPORT: None
         ASSERTION: Will turn the leftCamFallen class field to false for an index
         of 0, and it will turn the rightCamFallen class field to false for an
         index of 1
@@ -652,6 +702,8 @@ class PoseFallen():
 
     def getNoseCordinates(self, results, imgShape):
         """
+        IMPORT: MediaPipe results object, tuple
+        EXPORT: tuple
         ASSERTION: MiRo will always know the location of the face of the
         the resident
         """
@@ -671,6 +723,8 @@ class PoseFallen():
 
     def showBBox(self, results, img):
         """
+        IMPORT: MediaPipe results object, numpy array (image)
+        EXPORT: image, boolean
         PURPOSE: To show the results for the bounding box algorithm from MiRo's 
         stereo cameras
         """
@@ -705,6 +759,8 @@ class PoseFallen():
 
     def showPose(self, results, img):
         """
+        IMPORT: MediaPipe results object, numpy array (image )
+        EXPORT: numpy array (image), boolean
         PURPOSE: To show the results fr the mediapipe algorithm from MiRo's 
         stereo cameras
         """
@@ -733,8 +789,10 @@ class PoseFallen():
 
     def __setMode(self, args):
         """
-        PURPOSE: A wrapper to the setter property, so we can use function internally,
-        and as a user
+        IMPORT: list
+        EXPORT: boolean
+        PURPOSE: A wrapper to the setter property, to validate the set mode of 
+        algorithm
         """
         #TODO: Try to re-factor this so you can use the argparser module for it to be cleaner
         retArg = None
@@ -768,11 +826,18 @@ class PoseFallen():
         return  retArg
 
     def MiRoError(self, mssg):
+        """
+        IMPORT: String
+        EXPORT: None
+        ASSERTON: Exits the programme with the given error messages 
+        """
         rospy.logerr(mssg)
         sys.exit(0)
 
     def __validateMode(self, inMode):
         """
+        IMPORT: object
+        EXPORT: object
         PURPOSE: TO ensure that the current mode which has being set for the
         programme is not going to be none
         """
@@ -785,10 +850,14 @@ class PoseFallen():
 #--------------METHODS USED FOR TESTING THIS CLASS -----------------------------
     def testMiRoVariables(self, inPathRight, inPathLeft):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: String, String
+        EXPORT: test results
 
-        PURPOSE:
+        PURPOSE: Creates a file with true positives, true negatives, false 
+        positives, precision, and recall to given file. Programe wil 
+        go run tests starting at 0.2  all the way to 1 in increments of two. For
+        either the tracking confidence or detection confidence, just change 
+        the part of the code saying "CHANGE ME..."
         """
 
         #the tuning variables on the values I am running the tests on
@@ -817,6 +886,7 @@ class PoseFallen():
             #default detection confidence
             #self.__dectConf = 0.5
             #self.__trackConf = value
+            #CHANGE ME FOR THE TESTS WHICH YOU WANT
             self.__dectConf = value
             self.__trackConf = 0.5
             print(value)
@@ -832,10 +902,10 @@ class PoseFallen():
 
     def processImagesPose(self, fileList, savePath):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: list of string, string
+        EXPORT: saved file
+        ASSERTION: Applies pose estimation to the given the images in the 
+        provided list of images
         """
 
         ii = 0
@@ -864,10 +934,9 @@ class PoseFallen():
 
     def testResolution(self):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: None
+        EXPORT: file with all resolution data
+        PURPOSE: Man method for holding all the tests associated to resolutions
         """
 
         #setting the tracking and detection confidence to defaults as 
@@ -888,10 +957,11 @@ class PoseFallen():
 
     def createPerformanceData(self, inPathRight, inPathLeft):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: String, string
+        EXPORT: csv file
+        PURPOSE: creates the performance data for the algorithmic components. 
+        Essentially times how long it takes to perform modifications on the left
+        and right images, as like a real video feed. 
         """
         loopCounter = 0
         elapsedTime = 0
@@ -950,10 +1020,9 @@ class PoseFallen():
 
     def createFile(self, fileName, inFieldNames):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: string, list of strings
+        EXPORT: CSV files
+        ASSERTION: Creates blank file with headers specified with "inFieldNames"
         """
         with open(fileName, "w") as outStrm:
             csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
@@ -961,10 +1030,10 @@ class PoseFallen():
 
     def writeInfo(self, fileName, headers, xData, yData):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: String, list of strings, float, float
+        CSV:
+        ASSERTION: updates csv file specified by "fileName", and blaces the xdata
+        and yData underneath the columns respectively
         """
 
         with open(fileName, 'a') as outStream:
@@ -979,10 +1048,10 @@ class PoseFallen():
 
     def testResolutionPerformance(self):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+        ASSERTION: Obtains performance data for the algorithmic components. Times
+        how long each algorithmic component wll take to execute
         """
 
         loopCounter = 0
@@ -1037,9 +1106,10 @@ class PoseFallen():
 
 
 
-
-
 if __name__ == "__main__":
+    """
+    MAIN METHOD
+    """
     mode = ""
     algo = ""
     mode = rospy.get_param("viewMode")
