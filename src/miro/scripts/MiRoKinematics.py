@@ -1,3 +1,15 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: Class is responsible for all the kinematic movemnts of MiRo. This will 
+include the following
+- driving to resident
+- use of pid controller
+- active sensing 
+- doing emergency help dance 
+- sending e-mail to aged care centre
+"""
 import statistics as st
 from simple_pid import PID
 import rospy
@@ -46,6 +58,9 @@ SONAR_MAX = 0.25
 class MiRoKinematics:
 
     def __init__(self):
+        """
+        The default and alternate constructor of this class
+        """
         self.__verbose = False
         self.__headMoving = False
         #if resident has already fallen, ignore messages from resident/fallen/
@@ -105,15 +120,19 @@ class MiRoKinematics:
 
     @property
     def verbose(self):
+        """
+        IMPORT: None
+        EXPORT: boolean 
+        PURPOSE: accessor for verbose class field
+        """
         return self.__verbose
 
     #TODO: you will need to make this consistent with all the accessors
     def getSonarReadings(self):
         """
-        IMPORT:
-        EXPORT:
-
-        PURPOSE:
+        IMPORT: None 
+        EXPORT: float 
+        ASSERTION: return the current value from the sonar sensor
         """
 
         sonarReading = None
@@ -130,10 +149,17 @@ class MiRoKinematics:
 
     @verbose.setter
     def verbose(self, newVerbose):
+        """
+        IMPORT: object
+        EXPORT: None
+        PURPOSE: setter for the verbose class field
+        """
         self.__verbose = self.__validateVerbose(newVerbose)
 
     def moveHeadCords(self):
         """
+        IMPORT: None
+        EXPORT: None
         ASSERTION: Moves head to given xCord and yCord, if points are wthin
         MiRo's workspace
         """
@@ -210,10 +236,11 @@ class MiRoKinematics:
 
     def medianKernel(self, dataPts, newPt):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: array of floats, float
+        EXPORT: float, array of floats
 
-        PURPOSE:
+        PURPOSE: calculates the median of the inputted array given the addition 
+        of the new data point
         """
 
         dataPts = np.roll(dataPts, -1)
@@ -227,7 +254,10 @@ class MiRoKinematics:
 
     def respondFallen(self):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+        PURPOSE: this is the main function for this class. This method will 
+        handle the approaching of the resident, and the emergency help dance
         """
 
         sleepTime = 0.02
@@ -378,7 +408,9 @@ class MiRoKinematics:
 
     def moveHead2XCoord(self, dx):
         """
-        ASSERTION:
+        IMPORT: float
+        EXPORT: None
+        ASSERTION: moves to the new location
         """
         retValue = 0
 
@@ -410,6 +442,8 @@ class MiRoKinematics:
 
     def rotateBodyRight(self):
         """
+        IMPORT: None
+        EXPORT: None
         ASSERTION: Rotates Miro to the right 1 degree at a time
         """
 
@@ -426,6 +460,8 @@ class MiRoKinematics:
 
     def rotateBodyLeft(self):
         """
+        IMPORT: None
+        EXPORT: None
         ASSERTION: Rotates Miro to the left 1 degree at a time
         """
 
@@ -442,7 +478,9 @@ class MiRoKinematics:
 
     def getAttention(self):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+        ASSERTION: MiRo will do the emergency help dance
         """
 
         #setting it to spin in clockwise direction
@@ -455,17 +493,11 @@ class MiRoKinematics:
         msgWheels.twist.angular.z = v * 6.2832 * spin
         self.__pubWheels.publish(msgWheels)
 
-    def wagTail(self):
-        """
-        ASSERTION: Wags MiRo's tail for a set time to communicate happiness.
-        """
-        #TODO: come back and finish this  off
-
-        if self.__verbose:
-            rospy.loginfo("Wagging MiRo's tail")
 
     def residentOkayHaptic(self):
         """
+        IMPORT: None
+        EXPORT: boolean
         ASSERTION: Will return true if the body of Miro is touched
         """
 
@@ -491,10 +523,10 @@ class MiRoKinematics:
 
     def getLocation(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: dictonary
 
-        PURPOSE:
+        ASSERTION: returns the geo location of MiRo at the current moment
         """
 
         g = geocoder.ip('me')
@@ -513,10 +545,11 @@ class MiRoKinematics:
 
     def sendEmail(self, location):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: location object
+        EXPORT: None
 
-        PURPOSE:
+        ASSERTS: sends an e-mail from MiRo's email address to any email which will
+        be in the emailReceiver variables
         """
 
 
@@ -552,7 +585,9 @@ class MiRoKinematics:
             smtp.sendmail(emailSender, emailReceiver, em.as_string())
     def turnLEDOn(self, rgb, bright):
         """
-        PURPOSE
+        IMPORT: array, integer
+        EXPORT: None
+        PURPOSE: To turn on the LED lights located on the side of MiRo
         """
 
         frontLeft, midLeft, rearLeft, frontRight, midRight, rearRight = range(6)
@@ -577,6 +612,8 @@ class MiRoKinematics:
 
     def activateSOSLED(self, sleep, frequency, color, bright):
         """
+        IMPORT: integer, integer, array, integer
+        EXPORT: None
         ASSERTION: MiRO will continuously turn on the LED on and off with
         intervals of 1 second given the specified color and brightness
         """
@@ -592,6 +629,8 @@ class MiRoKinematics:
 
     def turnLEDOff(self):
         """
+        IMPORT: None
+        EXPORT: None
         ASSERTION: Turns all sections of MiRO
         """
         msgIllum = UInt32MultiArray()
@@ -600,10 +639,10 @@ class MiRoKinematics:
 
     def createFile(self, fileName, inFieldNames):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: string, list
+        EXPORT: CSV file
 
-        PURPOSE:
+        ASSERTION: creates an empty csv file with the headings specified by inFieldNames
         """
         with open(fileName, "w") as outStrm:
             csvWriter = csv.DictWriter(outStrm, fieldnames=inFieldNames)
@@ -611,10 +650,12 @@ class MiRoKinematics:
 
     def writeInfo(self, fileName, headers, xData, yData):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: string, list of strings, float, float
+        EXPORT: None
 
-        PURPOSE:
+        ASSERTON: updates created file, and places xData and yData underneath
+        each header. The first header is the x values, and the second is the 
+        y value 
         """
 
         with open(fileName, 'a') as outStream:
@@ -631,10 +672,11 @@ class MiRoKinematics:
 
     def generatePID(self, P=-3, I=0, D=-0.03):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: integer, integer, integer
+        EXPORT: PID object
 
-        PURPOSE:
+        PURPOSE: creates a PID object with desired P, I, D values, and setting 
+        point
         """
         pid = PID(P,I,D, setpoint=SONAR_MAX)
         #restraining the outputs between 0 and 1, so we don't blow up motors
@@ -644,10 +686,11 @@ class MiRoKinematics:
 
     def createRecordDataFile(self, P, I, D):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: integer, integer, integer
+        EXPORT: CSV fil
 
-        PURPOSE:
+        PURPOSE: crates a file to record time and the control variable for the
+        PID controller
         """
         pidSetting = "P=" + str(P) + ",I=" + str(I) + ",D=" + str(D) + ".csv"
         fileName = "/home/parallels/Desktop/Thesis/data/sonar_pid_control/data" + pidSetting
@@ -658,10 +701,12 @@ class MiRoKinematics:
     #TODO: you will need to refactor this so you can change the file name and the headers when you call the function
     def createLogDataFile(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: CSV file
 
         PURPOSE:
+        PURPOSE: crates a file to record time and the control variable for the
+        sonar sensor
         """
 
         headers = ["Time (secs)", "Control variable"]
@@ -671,10 +716,11 @@ class MiRoKinematics:
 
     def determinePIDControl(self, pid, reading, prevControl):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: PID object, float, float
+        EXPORT: float
 
-        PURPOSE:
+        ASSERTION: calculates a new control value given the old control value, 
+        and the new sonar sensor reading
         """
 
         #if we can't determine a new control variable, we want to use previous one
@@ -695,10 +741,12 @@ class MiRoKinematics:
 
     def logDataFile(self, fileName, headers, inX, startTime):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: string, list of strings, float, float
+        EXPORT: float
 
-        PURPOSE:
+        PURPOSE: updates the csv file which is used to log the data for the PID 
+        contoller, and the sonar sensor experiment. Returns the elapsed time 
+        so it can be used for the next update of the file
         """
         elapsedTime = time.time() - startTime
         self.writeInfo(fileName, headers, elapsedTime, inX)
@@ -707,10 +755,11 @@ class MiRoKinematics:
 
     def activateWheels(self, control):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: float
+        EXPORT: export
 
-        PURPOSE:
+        ASSERTION: MiRo's differntial drive speed will be updated given the control 
+        variable. Which is given by: control * MiRO_full_velocity.
         """
 
         msgWheels = TwistStamped()
@@ -719,24 +768,12 @@ class MiRoKinematics:
         msgWheels.twist.angular.z = 0.0
         self.__pubWheels.publish(msgWheels)
 
-    #TODO: I honestly don't know what this function is actually going to do
-    def wiggle(self, v, n, m):
-        """
-        ASSERTION: Wiggles MiRo's tail within the tail's work space
-        """
-        #TODO: come back and finish this  off
-        v = v + float(n) / float(m)
-        if v > 2.0:
-            v -= 2.0
-        elif v > 1.0:
-            v = 2.0 - v
-        return v
-
-        #stop node from being excited until node has being stopped
 
     def moveHead2YCoord(self, dy):
         """
-        ASSERTION:
+        IMPORT: float
+        EXPORT: float
+        ASSERTION: maps y coordinate to yaw direction
         """
         self.__startTime = time.time()
         self.__headMoving = True
@@ -745,6 +782,8 @@ class MiRoKinematics:
 
     def checkHeadWorkSpaceLift(self):
         """
+        IMPORT: None
+        EXPORT: boolean
         ASSERTION: Will stop MiRo's head from moving past it's workspace in the
         lift direction.
         """
@@ -774,6 +813,8 @@ class MiRoKinematics:
 
     def checkHeadWorkSpacePitch(self):
         """
+        IMPORT: None
+        EXPORT: boolean
         ASSERTION: Will stop MiRo's head from moving past it's workspace in the
         pitch direction.
         """
@@ -802,6 +843,8 @@ class MiRoKinematics:
 
     def checkHeadWorkspaceYaw(self):
         """
+        IMPORT: None
+        EXPORT: boolean
         ASSERTION: Will stop MiRo's head from past it's workspace in the yaw
         direction.
         """
@@ -830,6 +873,8 @@ class MiRoKinematics:
 
     def callbackCoords(self, data):
         """
+        IMPORT: ROS data object
+        EXPORT: None
         ASSERTION: This will unpack subscribed data from resident/coords/ topic and
         assign data to the facePos class field
         """
@@ -845,6 +890,8 @@ class MiRoKinematics:
 
     def callBackHasFallen(self, data):
         """
+        IMPORT: ROS data object
+        EXPORT: None
         ASSERTION: This function will unpack subscribed data from resident/fallen/
         topic and assign the fallenState class field to True
         """
@@ -858,39 +905,61 @@ class MiRoKinematics:
             rospy.loginfo("Resident hasn't fallen: %s " % data.data)
 
     def callBackSensorPackage(self, msg):
+        """
+        IMPORT: ROS data object
+        EXPORT: None
+        ASSERTION: access the current state of MiRo's sensors
+        """
         self.__sensorInfo = msg
 
     def callBackTimer(self, data):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: ROS data object
+        EXPORT: None
 
-        PURPOSE:
+        PURPOSE: determines if MiRo has finihsed speak from the Miro voice sub
+        system
         """
         self.__miroFinishedSpeaking = bool(data.data)
 
     def callBackResidentOkay(self, data):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: ROS data object
+        EXPORT: None
 
-        PURPOSE:
+        PURPOSE: determines if the resident has confirmed if they're okay from 
+        the MiRo voice system
         """
         self.__residentOkay = bool(data.data)
 
 
     def callbackKin(self, msg):
         """
+        IMPORT: ROS data object
+        EXPORT: None
+        PURPOSE: gets all the information relating to MiRo's kinmatics. Hence, 
+        joint angles, and current velocites
         """
         #TODO: you'll need to have some protection, so that if it's not called it will do nothing
         self.__kinHead = msg.position
 
     #TODO: come back and expand on this idea and see what can come out of it
     def cleanUp(self):
+        """
+        IMPORT: None
+        EXPORT: None
+        ASSERTION: ensures that LED lights are switched off when user ends program
+        """
         self.turnLEDOff()
         print("you have shut me down mate")
 
     def __validateVerbose(self, inVerbose):
+        """
+        IMPORT: Boolean
+        EXPORT: Boolean
+        PURPOSE: validates if the data type which is used for the verbose class
+        field is actually a boolean
+        """
         if type(inVerbose) is not(bool):
             MiRoError("Verbose muse be a boolean either true or false")
 
@@ -898,6 +967,8 @@ class MiRoKinematics:
 
     def __generateIllum(self, rgb, bright):
         """
+        IMPORT: array, integer
+        EXPORT: tuple
         ASSERTION: Generates MiRo specific code to produce color given rgb import
         with specified brightness by the bright import.
         """
@@ -909,10 +980,12 @@ class MiRoKinematics:
 
 def SMA(dataPts, newPt):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: array, float
+    EXPORT: float, array
 
-    PURPOSE:
+    PURPOSE: calculates the new average given the imported array and the addition 
+    of the new points. The first point of the array is popped off, and the new
+    point is added to the end
     """
 
     dataPts = np.roll(dataPts, -1)
@@ -926,10 +999,12 @@ def SMA(dataPts, newPt):
 
 def medianKernel(dataPts, newPt):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: array, float
+    EXPORT: float, array
 
-    PURPOSE:
+    PURPOSE: calculates the new median given the imported array and the addition 
+    of the new data points. The first point of the array is popped off, and 
+    the new point is added to the end
     """
 
     dataPts = np.roll(dataPts, -1)
@@ -944,10 +1019,12 @@ def medianKernel(dataPts, newPt):
 
 def modeKernel(dataPts, newPt):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: array, float
+    EXPORT: float, array
 
-    PURPOSE:
+    PURPOSE: calculate the new mod given the imported array and the addition 
+    of the new data points. The first point of the array is popped off, and the 
+    new point is added to the end 
     """
 
     dataPts = np.roll(dataPts, -1)
@@ -959,18 +1036,11 @@ def modeKernel(dataPts, newPt):
 
     return mode, dataPts
 
-def testSonarSensor():
-    """
-    IMPORT:
-    EXPORT:
-
-    PURPOSE:
-    """
-
-    #TODO: you will need to come back to this, and implement it after you have integrated it into your main program
-
 
 if __name__ == "__main__":
+    """
+    MAIN METHOD
+    """
     miroRobot = MiRoKinematics()
     #miroRobot.verbose = True
     #TODO: write in your report how hard this was to actually implement it in code
