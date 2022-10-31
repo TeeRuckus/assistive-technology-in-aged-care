@@ -1,3 +1,10 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: This class will facilitate the verbal communication between MiRo and the
+resident
+"""
 import rospy
 from std_msgs.msg import UInt8MultiArray, UInt16MultiArray, Int16MultiArray, String
 from std_msgs.msg import Bool
@@ -70,6 +77,9 @@ class Streamer():
             }
 
     def __init__(self):
+        """
+        The default and alternate constructor of this class
+        """
         rospy.init_node(NODE_NAME, anonymous=True)
         #self.__playWarningSignal = False
         #TODO: come back and play with these variables if you get the correct signals
@@ -144,6 +154,12 @@ class Streamer():
 
     @giveIntro.setter
     def giveIntro(self, inArg):
+        """
+        IMPORT: boolean
+        EXPORT: None
+
+        ASSERTION: sets the giveIntro class field
+        """
         #TODO: yo will need to do some validation on this afterwards
         self.__giveIntro = inArg
 
@@ -151,10 +167,10 @@ class Streamer():
     @miroSpeak.setter
     def miroSpeak(self, inArg):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: boolean
+        EXPORT: none
 
-        PURPOSE:
+        ASSERTION: sets the miroSpeak class field
         """
 
         #TODO: you will need to add validator methods here
@@ -166,16 +182,19 @@ class Streamer():
     @playWarningSignal.setter
     def playWarningSignal(self, inSound):
         """
-        ASSERTION:
+        IMPORT: boolean
+        EXPORT: none
+
+        ASSERTION: Returns the playWarningSignal class field
         """
         self.__playWarningSignal = self.__validateSound(inSound)
 
     def recordSound(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: None
 
-        PURPOSE:
+        ASSERTIONS: records sound from MiRo's mics for three seconds
         """
         topicBaseName = "/" + os.getenv("MIRO_ROBOT_NAME")
         #set up what you need to record sound
@@ -186,20 +205,21 @@ class Streamer():
 
     def clearRecording(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: Export
 
-        PURPOSE:
+        ASSERTON: clears all the recorded data from stack memory
         """
         self.__micBuff = None
         self.__outBuff = None
 
     def startFallenTimer(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: None 
 
-        PURPOSE:
+        ASSERTION: notifies the whole MiRo platform that MiRo has finished
+        speaking
         """
 
         timer = Bool()
@@ -208,10 +228,11 @@ class Streamer():
 
     def resetTimer(self):
         """
-        IMPORT:
-        EXPORT:
+        IMPORT: None
+        EXPORT: None
 
-        PURPOSE:
+        ASSERTION: notifies the wole MiRo platform that MiRo has finished 
+        speaking
         """
 
         timer = Bool()
@@ -223,7 +244,10 @@ class Streamer():
 
     def decodeFile(self, inDecodeName, path):
         """
-        PURPOSE:
+        IMPORT: string, string
+        EXPORT: saves a .decode file
+        ASSERTIONS: will generate a .decode file for the specified .mp3 or .wav
+        file
         """
         fileName = "/tmp/" + inDecodeName  + ".decode"
 
@@ -270,7 +294,9 @@ class Streamer():
     #function but it's going to take any wave format
     def playSound(self, inFile, path):
         """
-        PURPOSE:
+        IMPORT: string, string
+        EXPORT: None
+        ASSERTIONS: plays sound from the specified .wav or .mp3 and .decode file
         """
 
 
@@ -335,7 +361,9 @@ class Streamer():
 
     def saveAudioMics(self):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+        PURPOSE: To save the recorded audio to /tmp/miroResidentAudio.wav
         """
 
         while not rospy.core.is_shutdown():
@@ -371,7 +399,10 @@ class Streamer():
 
     def talkToMiRoOnline(self):
         """
-        PURPOSE:
+        IMPORT: None
+        EXPORT: None
+        PURPOSE: handles the verbal communication between MiRo and he resident
+        using an online module 
         """
         #TODO: remember to make this function pass something in
         voiceRecording = "/tmp/miroResidentAudio.wav"
@@ -385,15 +416,11 @@ class Streamer():
 
             print("I have finished speaking now")
 
-    def talkToMiRoOffline(self):
-        """
-        PURPOSE:
-        """
-
-
 
     def determineResponse(self, response):
         """
+        IMPORT: string
+        EXPORT: string, boolean
         PURPOSE: To look for hot words inside the resident's speech, and depending
         on the hot words found MiRo will determine the correct response.
         """
@@ -429,6 +456,8 @@ class Streamer():
 
     def listenToResidentOffline(self):
         """
+        IMPORT: None
+        EXPORT: string
         PURPOSE: To convert speech into transcribed text. The transcribed text
         will be the residents speech. The purpose is to allow MiRo to be able to
         have some interaction with the residents
@@ -454,6 +483,8 @@ class Streamer():
 
     def listenToResidentOnline(self):
         """
+        IMPORT: None
+        EXPORT: string
         PURPOSE: This will use google speech recognition API to listen to the
         resident. For the use of API, this sub-module will require an internet
         connection, and recognition speeds will be determined by internet speed.
@@ -485,7 +516,11 @@ class Streamer():
 
     def listenToResidentOnlineFile(self, inFile):
         """
-        PURPOSE:
+        IMPORT: string
+        EXPORT: string
+        PURPOSE: listen to the resident using an online module. Except the responses
+        will be handled by saving to file. Hence, audio files are saved
+        and read in from file
         """
 
         miroResponse = None
@@ -515,6 +550,8 @@ class Streamer():
 
     def generateSpeech(self, inSpeech, inLan="en", accent="com.au", speakSlow=False):
         """
+        IMPORT: string , string, string, boolean
+        EXPORT: Gtts Object
         ASSERTION: Will convert the inputted text into a voice
         """
         print("generating speech")
@@ -524,6 +561,8 @@ class Streamer():
 
     def speakComputer(self, inGttsObj, fileName="voice.mp3"):
         """
+        IMPORT: gTTS object, string
+        EXPORT: None
         PURPOSE: This will play MiRO's voice from the computer.
         """
 
@@ -536,7 +575,11 @@ class Streamer():
 
     def speakMiRo(self, inGttsObj, savePath):
         """
-        PURPOSE:
+        IMPORT: gTTS object, string
+        EXPORT: None
+        PURPOSE: this  function was used for testing. This function will
+        save MiRo's response into a file, and then play the response using 
+        the computer microphones 
         """
         #you will want to first generate a speech format in the wav format, and 
         #then you will want to send that to MiRo to actually speak and say what 
@@ -552,6 +595,8 @@ class Streamer():
 
     def saveMP3(inGttsObj, fileName):
         """
+        IMPORT: gTTS object, String 
+        EXPORT: None
         PURPOSE: To save a text-to-speech object into an .mp3 format.
         """
         #forcing the file extension to be mp3 regardless of extension
@@ -559,6 +604,8 @@ class Streamer():
 
     def saveWAV(inGttsObj, fileName):
         """
+        IMPORT: gTTS object, string
+        EXPORT: None
         PURPOSE: To save a text-to-speech object into a .wave format.
         """
         #foricing the file extension to be a wav format regardless of extension
@@ -566,7 +613,10 @@ class Streamer():
 
     def readFile(self, fileName):
         """
-        PURPOSE:
+        IMPORT: string
+        EXPORT: list of strings
+        PURPOSE: this will read in a text file, and save each word as an entry 
+        of a list
         """
         fileContents = []
         with open(fileName, "r") as inStrm:
@@ -577,21 +627,30 @@ class Streamer():
 
     def callback_log(self, msg):
         """
-        PURPOSE:
+        IMPORT: ROS data object
+        EXPORT: None
+        PURPOSE: to flush out the stdout stream. Used to flush out the 
+        bytes from when MiRo has finished speaking
         """
         sys.stdout.write(msg.data)
         sys.stdout.flush()
 
     def callback_stream(self, msg):
         """
-        PURPOSE:
+        IMPORT: ROS data object
+        EXPORT: None
+        PURPOSE: this is used to check the size of the stdout stream. Used, 
+        for MiRO to determine if MiRo has finished playing the whole entire 
+        saved file
         """
         self.__bufferSpace = msg.data[0]
         self.__bufferTotal = msg.data[1]
 
     def readBinary(self, fileName):
         """
-        PURPOSE:
+        IMPORT: string
+        EXPORT: binary file 
+        PURPOSE: reads in a binary file
         """
         dat = None
         with open(fileName, "rb") as inStrm:
@@ -663,7 +722,9 @@ class Streamer():
 
     def __validateSound(self, inSound):
         """
-        PURPOSE:
+        IMPORT: object 
+        EXPORT: object 
+        PURPOSE: ensures that the sound object is not nothing 
         """
         if inSound is None:
             self.soundError("you can't set sound to a none object")
@@ -675,6 +736,8 @@ class Streamer():
 
     def soundError(self, msg):
         """
+        IMPORT: ROS data object
+        EXPORT: None
         ASSERTIONS: will display the error message to the terminal and exit program
         """
         rospy.loginfo("ERROR: MiRoVoice.py: %s " % msg)
@@ -682,13 +745,23 @@ class Streamer():
 
     def debug(self, inTxt):
         """
-        PURPOSE:
+        IMPORT: string
+        EXPORT: None
+        PURPOSE: This will print out the inputted text formatted in the followng 
+        manner
+        ========================================================================
+        [message]
+        ========================================================================
+        This was used to debug this class
         """
         print("=" * 80)
         print(inTxt)
         print("=" * 80)
 
 if __name__ == "__main__":
+    """
+    MAIN METHOD
+    """
     #TODO: you will need to come back and implement this functionality later
     #determining if MiRo is being ran offline or online
     mode = None
