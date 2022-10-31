@@ -385,6 +385,7 @@ def createTrackingConfidencePlots():
 
     plt.plot(x, reliability)
     plt.ylabel("Reliability (%)")
+    plt.xlabel("Tracking Confidence")
     plt.title("Impacts of Tracking Confidence on Reliability")
     plt.savefig(savePath + "reliability")
 
@@ -407,6 +408,8 @@ def createDetectionConfidencePlots():
     noDetection  = data["No Detection"]
     reliability = data["Reliability"]
 
+    #to stop two lines from showing up in the plot
+    plt.clf()
     plt.legend(loc="upper left")
     plt.plot(x, precision)
     plt.xlabel("Detection Confidence")
@@ -513,4 +516,4 @@ if __name__ == "__main__":
     #getResolutionStats()
     createTrackingConfidencePlots()
     createDetectionConfidencePlots()
-    createResolutionCharts()
+    #createResolutionCharts()
