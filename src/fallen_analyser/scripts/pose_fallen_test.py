@@ -1,3 +1,10 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: To test the pose_fallen.py file
+"""
+
 import sys
 from pose_fallen import PoseFallen
 import cv2
@@ -6,6 +13,9 @@ import glob
 PATH = "test_data/SetElderly/"
 
 def main():
+    """
+    MAIN METHOD
+    """
     #testImageData(distance=True, bbox=False)
     #getFalseNegativesBbox()
     #getFalseNegativesDistance()
@@ -18,6 +28,11 @@ def main():
 
 
 def testImageBbox():
+    """
+    IMPORT: None
+    EXPORT: None
+    ASSERTIONS: method to use to test the bounding box algorithm on a single image
+    """
     poseFallen = PoseFallen()
     testDataPath = "test_data/SetElderly/"
 
@@ -39,6 +54,11 @@ def testImageBbox():
     cv2.destroyAllWindows()
 
 def testVideoBbox():
+    """
+    IMPORT: None
+    EXPORT: None
+    PURPOSE: Tests the bounding box algorithm on laptop camera
+    """
     keepOpen = True
     cap = cv2.VideoCapture(0)
     poseFallen = PoseFallen()
@@ -80,6 +100,11 @@ def testVideoBbox():
     cv2.destroyAllWindows()
 
 def testImageDist():
+    """
+    IMPORT: None
+    EXPORT: None
+    PURPOSE: tests the Head-Floor algorithm on a single image
+    """
     poseFallen = PoseFallen()
     testDataPath = "test_data/SetElderly/"
     #reading in an image from the test data 
@@ -107,6 +132,11 @@ def testImageDist():
     cv2.destroyAllWindows()
 
 def testVideoDistance():
+    """
+    IMPORT: None
+    EXPORT: None
+    PURPOSE: tests the Head-Floor algorithm on the laptop camera
+    """
     keepOpen = True
     cap = cv2.VideoCapture(0)
     poseFallen = PoseFallen()
@@ -143,10 +173,10 @@ def testVideoDistance():
 
 def testVideoBlurring():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: tests the image blurring algorithm on computer cameras
     """
     poseFallen = PoseFallen("show")
     keepOpen = True
@@ -166,10 +196,10 @@ def testVideoBlurring():
 
 def blurTestData():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: tests the blur algorithm on all found images in data set
     """
 
     pngFiles = glob.glob(PATH + "*.png")
@@ -191,6 +221,9 @@ def blurTestData():
 
 def testImageData(**kwargs):
     """
+    IMPORT: optional argument selector (**kwargs)
+    EXPORT: None
+
     PURPOSE:This function will test the fallen function given the setElderly
     data, and will write the results in relation to the following metrics.
 
@@ -245,6 +278,9 @@ def testImageData(**kwargs):
 
 def getFalseNegativesDistance():
     """
+    IMPORT: None
+    EXPORT: CSV file
+    ASSERTION: returns all the false negatives from the Head-Floor algorithm 
     """
     path = "results/distance_fall_detection/falseNegativeList.txt"
     falseNegatives = readToList(path)
@@ -264,6 +300,9 @@ def getFalseNegativesDistance():
 
 def getFalseNegativesBbox():
     """
+    IMPORT: None
+    EXPORT: CSV file
+    ASSERTON: returns all the false negatives of teh bounding box algorithm
     """
 
     path = "results/bounding_box_fall_detection/falseNegativesList.txt"
@@ -289,6 +328,14 @@ def getFalseNegativesBbox():
 
 def calcPerformance(actualDict, resultsDict, savePath, fnPath):
     """
+    IMPORT: dictonary, dictonary, string, string
+    EXPORT: CSV file
+    PURPOSE: compares pre-labelled data to the produced data, and compares each field. 
+    If the fields matches, that's a true positives
+    if labelled data identifies a fall, and the pre-labelled data identifies it 
+    as non fall that's a false positive 
+    if labelled data labelled the data as non fall, and pre-labelled labelled it 
+    as a fall, that is a false negative. Precision and recall is calculate afterwards
     """
     performance = {}
     falseNegativeList = []
@@ -352,6 +399,8 @@ def calcPerformance(actualDict, resultsDict, savePath, fnPath):
 
 def applyDistanceFallDetection():
     """
+    IMPORT: None
+    EXPORT: CSV file
     PURPOSE: To test the fall detection method using the distance of the head to 
     the heap joint of the fallen resident, and getting the results it produces
     """
@@ -380,6 +429,8 @@ def applyDistanceFallDetection():
 
 def applyBBoxFallDetection():
     """
+    IMPORT: None
+    EXPORT: CSV file
     PURPOSE: TO test the fall detection method using the bounding box method, and
     trying to extract performance results from fall method.
     """
@@ -409,6 +460,8 @@ def applyBBoxFallDetection():
 
 def writeToFile(path, data):
     """
+    IMPORT: string, list
+    EXPORT: CSV file
     PURPOSE: To write data which has being stored in a dictionary to a file
     """
     with open(path, "w") as outStrm:
@@ -417,6 +470,8 @@ def writeToFile(path, data):
 
 def writeToFileList(path, inList):
     """
+    IMPORT: string, list of stings
+    EXPORT: CSV file
     PURPOSE: To write data which has being stored in a list format to a file
     """
 
@@ -426,6 +481,8 @@ def writeToFileList(path, inList):
 
 def readToList(path):
     """
+    IMPORT: string
+    EXPORT: CSV file
     PURPOSE: to read in a file which will be a list of items 
     """
 
@@ -439,6 +496,8 @@ def readToList(path):
 
 def readToDictonary(path):
     """
+    IMPORT: string
+    EXPORT: CSV file
     PURPOSE: To read data from a CSV file which is formatted in the following 
     manner <key for dictionary>, <value for dictionary entry>
     """
@@ -459,6 +518,8 @@ def readToDictonary(path):
 
 def fallenImage(filePath):
     """
+    IMPORT: string
+    EXPORT: CSV file
     PURPOSE: Opens up paths in given list to determine if image has being
     labelled as a fall or a non-fall. A non-fall file will have no data written
     to it, and a fall will have data written in it.
@@ -475,4 +536,7 @@ def fallenImage(filePath):
     return fallenList
 
 if __name__ == "__main__":
+    """
+    MAIN METHOD
+    """
     main()
