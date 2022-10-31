@@ -1,3 +1,11 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: This file is mainly used to create graphs and histgrams, to present
+the results of this project. This file is reponsible for producing all the 
+graphs in the results section
+"""
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -8,10 +16,10 @@ plt.style.use("ggplot")
 
 def getCsvFiles(dirName):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: string 
+    EXPORT: list of strings
 
-    PURPOSE:
+    PURPOSE: this wll get all the CSV files which are in the given directory name
     """
     files = os.listdir(dirName)
     print(files[1].split(".")[-1])
@@ -24,10 +32,11 @@ def getCsvFiles(dirName):
 
 def displayPID():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots of the PID experiment, and saves plots
+    to file
     """
     dirName = "sonar_pid_control/I_tuning/"
     files = getCsvFiles(dirName)
@@ -55,10 +64,11 @@ def displayPID():
 
 def displaySonar():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots associated with the sonar sensor experiments,
+    and saves plots to file
     """
     dirName = "sonar_filtering/Driving results/SMA/"
     files = getCsvFiles(dirName)
@@ -81,10 +91,11 @@ def displaySonar():
 
 def displayPurePerformance():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots for the algorithm performance comparison 
+    experiment, and saves plots to file
     """
 
     dirName = "video/performance/"
@@ -108,10 +119,11 @@ def displayPurePerformance():
 
 def displayResolutionPerformance():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots associated with the resolution performance
+    experiment, the plots will be saved to file
     """
 
     dirName = "video/performance/resolution/"
@@ -135,10 +147,11 @@ def displayResolutionPerformance():
 
 def getMediaPipeStatsDectConf():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots associated with the  detection confidence
+    MediaPipe experiments, and save the plots to a file 
     """
 
     steps = [ii * 0.1 for ii in range (2, 12, 2)]
@@ -201,10 +214,11 @@ def getMediaPipeStatsDectConf():
 
 def getMediaPipeStatsTrackConf():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this will create the plots which are associated with the tracking 
+    confidence experiment, and save the plots to a file
     """
 
     steps = [ii * 0.1 for ii in range (2, 12, 2)]
@@ -267,10 +281,11 @@ def getMediaPipeStatsTrackConf():
 
 def getResolutionStats():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: This will create the plots associated with the resolution experiments, 
+    and save the plots to file 
     """
 
     resolutions = ["1280x720", "640x360", "320x180"]
@@ -325,8 +340,8 @@ def getResolutionStats():
 
 def writeDict(path, data):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: string, list
+    EXPORT: None
 
     PURPOSE: To write data which has being stored in a dictionary to a file
     """
@@ -336,10 +351,11 @@ def writeDict(path, data):
 
 def createTrackingConfidencePlots():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: None
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: This  will create all the tracking confidence plots, and save all 
+    the plots to file without displaying them
     """
 
     savePath = "video/pose_detection/mediapipe_adjustments/left_cam/tracking_confidence/"
@@ -391,10 +407,11 @@ def createTrackingConfidencePlots():
 
 def createDetectionConfidencePlots():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: none
+    EXPORT: none 
 
-    PURPOSE:
+    PURPOSE: this will create all the detection confidence plots, and 
+    save all the plots to a file without displaying them 
     """
 
     savePath = "video/pose_detection/mediapipe_adjustments/left_cam/detection_confidence/"
@@ -449,10 +466,11 @@ def createDetectionConfidencePlots():
 
 def createResolutionCharts():
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: none 
+    EXPORT: none
 
-    PURPOSE:
+    PURPOSE: this wll create the plots for all the resolution experiments, and 
+    save the associated plots to a file without displaying the graphs
     """
 
     savePath = "video/pose_detection/resolution_adjustments/left_cam/"
@@ -507,6 +525,9 @@ def createResolutionCharts():
 
 #TODO: change the files
 if __name__ == "__main__":
+    """
+    MAIN METHOD
+    """
     #displayPID()
     #displaySonar()
     #displayPurePerformance()

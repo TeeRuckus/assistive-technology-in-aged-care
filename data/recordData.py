@@ -1,3 +1,10 @@
+"""
+AUTHOR: Tawana David Kwaramba
+EMAIL: tawanakwaramba@gmail.com
+LAST MODIFIED DATE: 31/10/22
+PURPOSE: This file will create the life data from MiRo's sonar sensor values, 
+given the elapsed time
+"""
 #TODO: you will need to have a header here explaining what is going on in this file
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,10 +21,12 @@ headers = ["", ""]
 
 def animatePID(i):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: integer
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this is the function which will animate the graph, and responsible 
+    for plotting the new data onto the graph. This will be for the PID 
+    experiment 
     """
 
     try:
@@ -45,10 +54,12 @@ def animatePID(i):
 #updating a tenth of a second
 def animateSonar(i):
     """
-    IMPORT:
-    EXPORT:
+    IMPORT: integer
+    EXPORT: None
 
-    PURPOSE:
+    PURPOSE: this is the function which will animate the graph, and responsible 
+    for plotting the new data onto the graph. This will be for the sonar sensor
+    experiment 
     """
 
     dataRaw = pd.read_csv("sonar_filtering/Raw Data.csv")
