@@ -42,10 +42,10 @@ orientation, and or the distance of the nose from the floor.
         - **test_signal.mp3**: Warning signal which wll be played when the resident has fallen.
 
 ## How to use
-    - Ensure that you have installed all the necessary packages and mdk, as illustrated by the following links
-        - [Installation of ROS Neotic](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_ROS)
-        - [Installation of MiRO MDK](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_MDK)
-    - ensure that you're the most outter layer of project
-    1. Run `catkin_make`
-    2. Run `source devel/setup.bash`
-    3. Run `roslaunch main.launch inModeF:=show inAlgoF:=pose`
+- Ensure that you have installed all the necessary packages and mdk, as illustrated by the following links
+    - [Installation of ROS Neotic](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_ROS)
+    - [Installation of MiRO MDK](http://labs.consequentialrobotics.com/miro-e/docs/index.php?page=Developer_Install_Steps_Install_MDK)
+- ensure that you're the most outter layer of project
+1. Run `catkin_make`
+2. Run `source devel/setup.bash`
+3. Run `roslaunch main.launch inModeF:=show inAlgoF:=pose`
